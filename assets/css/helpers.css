@@ -1,0 +1,24 @@
+/* Font Families */
+.fs-thin {
+    font-family: "Poppins Thin", sans-serif !important;
+}
+
+.fs-light {
+    font-family: "Poppins Light", sans-serif !important;
+}
+
+.fs-regular {
+    font-family: "Poppins Regular", sans-serif !important;
+}
+
+.fs-medium {
+    font-family: "Poppins Medium", sans-serif !important;
+}
+
+.fs-semi-bold {
+    font-family: "Poppins SemiBold", sans-serif !important;
+}
+
+.fs-bold {
+    font-family: "Poppins Bold", sans-serif !important;
+}

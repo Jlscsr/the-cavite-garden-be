@@ -1,0 +1,17 @@
+:root {
+    --text-color: #333;
+}
+
+html {
+    overflow-x: hidden;
+    scroll-padding-top: 7rem;
+    scroll-behavior: smooth;
+}
+
+a {
+    color: var(--text-color) !important;
+}
+
+li {
+    list-style: none !important;
+}

@@ -1,0 +1,21 @@
+/* ============== Footer Section ============== */
+.footer > .container > .row > .col > .links > ul {
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    row-gap: 1rem;
+}
+.footer > .container > .row > .col > .links > ul > li {
+    display: inline-block;
+}
+
+.footer > .container > .row > .col > .links > ul > li > a {
+    display: inline-block;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+}
+
+.footer > .container > .row > .col > .links > ul > li > a:hover {
+    text-decoration: underline !important;
+    transform: translateX(10px);
+}
