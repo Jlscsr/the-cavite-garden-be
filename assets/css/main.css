@@ -2,7 +2,8 @@
 :root {
     --main-color: #000;
     --emphasis-color: #e3e566;
-    --border-radius: 100px;
+    --border-radius-1: 100px;
+    --border-radius-2: 20px;
 }
 
 /* ============== Header Section ============== */
@@ -40,7 +41,7 @@
     margin-left: 1rem;
     padding-inline: 1rem;
     border: 1px solid var(--main-color);
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-1);
 }
 
 .header
@@ -103,7 +104,7 @@
     > .btn {
     margin-top: 7rem;
     padding: 0.8rem 7rem;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-1);
 }
 
 .main
@@ -150,3 +151,42 @@
 }
 
 /* ============= About Section ============== */
+.main > .about > .container > .row > .col:nth-of-type(1) > #panorama {
+    border-radius: var(--border-radius-2);
+}
+
+.main > .about > .container > .row > .col:nth-of-type(2) > h3 {
+    font-size: 3.5rem;
+}
+
+.main > .about > .container > .row > .col:nth-of-type(2) > a {
+    text-decoration: none;
+}
+
+.main > .about > .container > .row > .col:nth-of-type(2) > a:hover {
+    text-decoration: underline !important;
+}
+
+.main
+    > .about
+    > .container
+    > .row
+    > .col:nth-of-type(2)
+    > .container
+    > .row
+    > .col {
+    padding-block: 1rem;
+    border: 1px solid var(--main-color);
+    border-radius: var(--border-radius-2);
+}
+.main
+    > .about
+    > .container
+    > .row
+    > .col:nth-of-type(2)
+    > .container
+    > .row
+    > .col
+    > img {
+    width: 2rem;
+}
