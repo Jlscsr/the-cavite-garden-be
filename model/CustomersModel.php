@@ -144,7 +144,7 @@ class CustomersModel
         $email = $customerData['email'];
         $password = $customerData['password'];
 
-        $query = "INSERT INTO customer_tb (first_name, last_name, phone_number, birthdate, email, password) 
+        $query = "INSERT INTO customers_tb (first_name, last_name, phone_number, birthdate, email, password) 
             VALUES (:first_name, :last_name, :phone_number, :birthdate, :email, :password)";
 
         $statement = $this->pdo->prepare($query);
