@@ -1,37 +1,90 @@
 <?php
-// Create a response helper for API responses
+
+namespace Helpers;
 
 class ResponseHelper
 {
-    public static function sendSuccessResponse($data = null, $message, $status_code = 200)
-    {
-        http_response_code($status_code);
 
+    /**
+     * Sends a JSON response with the given data, message, status message, and status code.
+     *
+     * @param mixed $data The data to be included in the response (optional).
+     * @param string $message The message to be included in the response.
+     * @param string $status_message The status message to be included in the response.
+     * @param int $status_code The HTTP status code to be set for the response.
+     * @return void
+     */
+    public static function sendJsonResponse($data, $message, $status_message, $status_code)
+    {
         $response = [
-            'status' => 'success',
-            'code' => $status_code,
+            'status' => $status_message,
             'message' => $message,
-            'data' => $data ?? null,
         ];
 
+        if (!empty($data)) {
+            $response['data'] = $data;
+        }
+
+        http_response_code($status_code);
         echo json_encode($response);
     }
 
+    /**
+     * Sends a success response with the given data, message, and status code.
+     *
+     * @param array $data The data to be included in the response (optional). Default is an empty array.
+     * @param string $message The message to be included in the response.
+     * @param int $status_code The HTTP status code to be set for the response. Default is 200.
+     * @return void
+     */
+    public static function sendSuccessResponse($data = [], $message, $status_code = 200)
+    {
+        ResponseHelper::sendJsonResponse($data, $message, 'success', $status_code);
+    }
+
+    /**
+     * Sends an unauthorized response with the given message and status code.
+     *
+     * @param string $message The message to be included in the response.
+     * @param int $status_code The HTTP status code to be set for the response. Default is 401.
+     * @return void
+     */
+    public static function sendUnauthorizedResponse($message, $status_code = 401)
+    {
+        ResponseHelper::sendJsonResponse([], $message, 'unauthorized', $status_code);
+    }
+
+    /**
+     * Sends a database error response with the given message and status code.
+     *
+     * @param string $message The message to be included in the response.
+     * @param int $status_code The HTTP status code to be set for the response. Default is 404.
+     * @return void
+     */
+    public static function sendDatabaseErrorResponse($message, $status_code = 404)
+    {
+        ResponseHelper::sendJsonResponse([], $message, 'failed', $status_code);
+    }
+
+    /**
+     * A description of the entire PHP function.
+     *
+     * @param string $message The message to be included in the response.
+     * @param int $status_code The HTTP status code to be set for the response. Default is 400.
+     * @return void
+     */
     public static function sendErrorResponse($message, $status_code = 400)
     {
-        http_response_code($status_code);
-        echo json_encode(["error" => $message]);
+        ResponseHelper::sendJsonResponse([], $message, 'failed', $status_code);
     }
 
-    public static function sendUnauthrizedResponse($message, $status_code = 200)
+    /**
+     * Sends a server error response with the given message and status code.
+     *
+     * @return void
+     */
+    public static function sendServerErrorResponse()
     {
-        http_response_code($status_code);
-
-        $response = [
-            'status' => 'unauthorized',
-            "message" => $message,
-        ];
-
-        echo json_encode($response);
+        ResponseHelper::sendJsonResponse([], 'Internal Server Error', 'failed', 500);
     }
 }

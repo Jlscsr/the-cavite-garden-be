@@ -1,17 +1,24 @@
 <?php
+
+use Helpers\ResponseHelper;
+use Helpers\HeaderHelper;
+
 require_once dirname(__DIR__) . '/model/PlantModel.php';
-require_once dirname(__DIR__) . '/model/CategoriesModel.php';
-require_once dirname(__DIR__) . '/helpers/ResponseHelper.php';
+
+use Models\CategoriesModel;
+use Models\SubCategoriesModel;
 
 class PlantController
 {
     private $plant_model;
     private $categories_model;
+    private $sub_categories_model;
 
     public function __construct($pdo)
     {
         $this->plant_model = new PlantModel($pdo);
         $this->categories_model = new CategoriesModel($pdo);
+        $this->sub_categories_model = new SubCategoriesModel($pdo);
     }
 
     public function getAllPlants()
@@ -28,6 +35,15 @@ class PlantController
         foreach ($plants as $key => &$value) {
             $category = $this->categories_model->getCategoryById($value['categoryId']);
             $value['category_name'] = $category[0]['name'];
+        }
+        unset($value);
+
+        foreach ($plants as $key => &$value) {
+            $sub_category = $this->sub_categories_model->getSubCategoryById($value['subCategoryId']);
+
+            if (!empty($sub_category)) {
+                $value['sub_category_name'] = $sub_category[0]['name'];
+            }
         }
         unset($value);
 
@@ -68,20 +84,32 @@ class PlantController
     {
         HeaderHelper::setHeaders();
         // print the variable type of type_id
-        $type_id = $params['id'];
-        header('Content-Type: application/json');
+        $category_id = $params['id'];
 
-        if (!is_string($type_id)) {
+        if (!is_string($category_id)) {
             ResponseHelper::sendErrorResponse("Invalid plant type.", 400);
             return;
         }
 
-        $plants = $this->plant_model->getAllPlantsByCategory($type_id);
-        $category = $this->categories_model->getCategoryById($plants[0]['categoryId']);
-        $plants[0]['category_name'] = $category[0]['name'];
+        $plants = $this->plant_model->getAllPlantsByCategory($category_id);
+
+        foreach ($plants as $key => &$value) {
+            $category = $this->categories_model->getCategoryById($value['categoryId']);
+            $value['category_name'] = $category[0]['name'];
+        }
+        unset($value);
+
+        foreach ($plants as $key => &$value) {
+            $sub_category = $this->sub_categories_model->getSubCategoryById($value['subCategoryId']);
+
+            if (!empty($sub_category)) {
+                $value['sub_category_name'] = $sub_category[0]['name'];
+            }
+        }
+        unset($value);
 
         if (empty($plants)) {
-            ResponseHelper::sendErrorResponse("No plants found base on the plant type", 404);
+            ResponseHelper::sendSuccessResponse([], "No plants found base on the Category", 200);
             return;
         }
 

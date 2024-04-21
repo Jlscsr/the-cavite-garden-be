@@ -1,26 +1,83 @@
 <?php
 
-class AccountsModel
+use Helpers\ResponseHelper;
+use Models\EmployeesModel;
+use Models\HelperModel;
+
+class CustomersModel
 {
     private $pdo;
+    private $employee_model;
+    private $helper_model;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+        $this->employee_model = new EmployeesModel($pdo);
+        $this->helper_model = new HelperModel($pdo);
     }
 
     public function getAllCustomers()
     {
-        //
+        $query = "SELECT 
+        id,
+        first_name,
+        last_name,
+        phone_number,
+        email,
+        created_at,
+        updated_at FROM customers_tb";
+
+        $statement = $this->pdo->prepare($query);
+
+        try {
+            $statement->execute();
+            $customers = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($customers)) {
+                return [];
+            }
+
+            foreach ($customers as $key => $value) {
+                $response = $this->getCustomerAddressById($value['id']);
+
+                $customers[$key]['shipping_address'] = $response;
+            }
+
+            return $customers;
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            exit;
+        }
+    }
+
+    public function getCustomerAddressById($customer_id)
+    {
+        if (!is_integer($customer_id)) {
+            return [];
+        }
+
+        $query = "SELECT * FROM customers_shipping_address_tb WHERE customer_id = :customer_id";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            exit;
+        }
     }
 
     public function getAccountByEmail($email)
     {
         if (!is_string($email)) {
-            return [];
+            return false;
         }
 
-        $query = "SELECT * FROM customer_tb WHERE email = :email";
+        $query = "SELECT * FROM customers_tb WHERE email = :email";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':email', $email, PDO::PARAM_STR);
 
@@ -28,22 +85,10 @@ class AccountsModel
             $statement->execute();
 
             if ($statement->rowCount() === 0) {
-                $query = "SELECT * FROM employee_tb WHERE email = :email";
-                $statement = $this->pdo->prepare($query);
-                $statement->bindValue(':email', $email, PDO::PARAM_STR);
-
-                try {
-                    $statement->execute();
-                    $account_details = $statement->fetchAll(PDO::FETCH_ASSOC);
-                    $data = [
-                        'data' => $account_details,
-                        'role' => $account_details[0]['role']
-                    ];
-                    return $data;
-                } catch (PDOException $e) {
-                    ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-                }
+                $response = $this->employee_model->getEmployeeByEmail($email);
+                return $response;
             }
+
             $data = [
                 'data' => $statement->fetchAll(PDO::FETCH_ASSOC),
                 'role' => 'customer',
@@ -54,13 +99,13 @@ class AccountsModel
         }
     }
 
-    public function getAccountById($customer_id)
+    public function getCustomerById($customer_id)
     {
         if (!is_integer($customer_id)) {
             return [];
         }
 
-        $query = "SELECT id, first_name, last_name, phone_number, birthdate, email FROM customer_tb WHERE id = :customer_id";
+        $query = "SELECT id, first_name, last_name, phone_number, birthdate, email FROM customers_tb WHERE id = :customer_id";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
 
@@ -70,29 +115,26 @@ class AccountsModel
 
             $user_shipping_address_id = $user_info[0]['id'];
 
-            $query = "SELECT * FROM customers_shipping_address_tb WHERE customer_id = :customer_id";
-            $statement = $this->pdo->prepare($query);
-            $statement->bindValue(':customer_id', $user_shipping_address_id, PDO::PARAM_STR);
+            $shipping_address = $this->getCustomerAddressById($user_shipping_address_id);
 
-            try {
-                $statement->execute();
-                $shipping_address = $statement->fetchAll(PDO::FETCH_ASSOC);
+            $user_info[0]['shipping_addresses'] = $shipping_address;
 
-                $user_info[0]['shipping_addresses'] = $shipping_address;
-
-                return $user_info;
-            } catch (\Throwable $th) {
-                //throw $th;
-            }
+            return $user_info;
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
-    public function addNewAccount($customerData)
+    public function addNewCustomer($customerData)
     {
         if (!is_array($customerData) && empty($customerData)) {
             return [];
+        }
+
+        $response = $this->helper_model->checkForDuplicateEmail('customers_tb', $customerData['email']);
+
+        if ($response) {
+            return "Email already in use";
         }
 
         $first_name = $customerData['first_name'];
@@ -104,13 +146,21 @@ class AccountsModel
 
         $query = "INSERT INTO customer_tb (first_name, last_name, phone_number, birthdate, email, password) 
             VALUES (:first_name, :last_name, :phone_number, :birthdate, :email, :password)";
+
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':first_name', $first_name, PDO::PARAM_STR);
-        $statement->bindValue(':last_name', $last_name, PDO::PARAM_STR);
-        $statement->bindValue(':birthdate', $birthdate, PDO::PARAM_STR);
-        $statement->bindValue(':email', $email, PDO::PARAM_STR);
-        $statement->bindValue(':phone_number', $phone_number, PDO::PARAM_STR);
-        $statement->bindValue(':password', $password, PDO::PARAM_STR);
+
+        $bind_params = [
+            ':first_name' => $first_name,
+            ':last_name' => $last_name,
+            ':birthdate' => $birthdate,
+            ':email' => $email,
+            ':phone_number' => $phone_number,
+            ':password' => $password,
+        ];
+
+        foreach ($bind_params as $param => $value) {
+            $statement->bindValue($param, $value, PDO::PARAM_STR);
+        }
 
         try {
             $statement->execute();
@@ -118,6 +168,26 @@ class AccountsModel
             return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            exit;
+        }
+    }
+
+    public function checkForDuplicateEmail($email)
+    {
+        if (!is_string($email)) {
+            return false;
+        }
+
+        $query = "SELECT * FROM customers_tb WHERE email = :email";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':email', $email, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+            return $statement->rowCount() > 0;
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            exit;
         }
     }
 

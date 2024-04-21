@@ -1,4 +1,5 @@
 <?php
+
 require_once dirname(__DIR__) . '/config/load_env.php';
 
 function db_connect()
@@ -24,7 +25,7 @@ function db_connect()
             PDO::ATTR_EMULATE_PREPARES => false,
         ];
 
-        $pdo = new PDO($dsn, $username, $Password, $options);
+        $pdo = new \PDO($dsn, $username, $Password, $options);
 
         if ($pdo) {
             return $pdo;

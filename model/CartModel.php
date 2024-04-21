@@ -1,5 +1,7 @@
 <?php
-require_once dirname(__DIR__) . '/helpers/ResponseHelper.php';
+
+use Helpers\ResponseHelper;
+
 require_once dirname(__DIR__) . '/model/PlantModel.php';
 
 class CartModel
@@ -37,6 +39,7 @@ class CartModel
         $product_base_price = $data['product_base_price'];
 
         $get_existing_product_query = "SELECT * FROM cart_tb WHERE customer_id = :customer_id AND product_id = :product_id";
+
         $statement = $this->pdo->prepare($get_existing_product_query);
         $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
         $statement->bindValue(':product_id', $product_id, PDO::PARAM_STR);

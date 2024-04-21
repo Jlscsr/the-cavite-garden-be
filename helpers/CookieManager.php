@@ -1,4 +1,9 @@
 <?php
+
+namespace Helpers;
+
+use Helpers\ResponseHelper;
+
 class CookieManager
 {
     private $jwt;
@@ -22,6 +27,28 @@ class CookieManager
     public function resetCookieHeader()
     {
         setcookie($this->cookie_name, '', time() - 3600, '/', '', $this->is_secure, $this->is_http_only);
+    }
+
+    public function getCookieHeader()
+    {
+        $headers = getallheaders();
+
+        $this->validateCookiePressence();
+
+        $token = $headers['Cookie'];
+        $token = str_replace("tcg_access_token=", "", $token);
+
+        return $token;
+    }
+
+    public function validateCookiePressence()
+    {
+        $headers = getallheaders();
+
+        if (!isset($headers['Cookie'])) {
+            ResponseHelper::sendErrorResponse('Missing Cookie', 400);
+            exit;
+        }
     }
 
     public function validateToken($token)

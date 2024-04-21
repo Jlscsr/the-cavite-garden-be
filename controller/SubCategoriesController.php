@@ -3,25 +3,25 @@
 use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
 
-use Models\CategoriesModel;
+use Models\SubCategoriesModel;
 
-class CategoriesController
+class SubCategoriesController
 {
-    private $categories_model;
+    private $sub_categories_model;
 
     public function __construct($pdo)
     {
-        $this->categories_model = new CategoriesModel($pdo);
+        $this->sub_categories_model = new SubCategoriesModel($pdo);
     }
 
     /**
      * Get all plant types and return them as JSON.
      */
-    public function getAllPlantCategories()
+    public function getAllPlantSubCategories()
     {
         HeaderHelper::setHeaders();
 
-        $product_categories = $this->categories_model->getAllPlantCategories();
+        $product_categories = $this->sub_categories_model->getAllPlantSubCategories();
 
         if (empty($product_categories)) {
             ResponseHelper::sendErrorResponse("No plant types found", 404);
@@ -32,7 +32,7 @@ class CategoriesController
         return;
     }
 
-    public function addNewCategory($data)
+    public function addNewSubCategory($data)
     {
         if (!is_array($data) || empty($data)) {
             ResponseHelper::sendErrorResponse("Invalid parameter type.", 400);
@@ -41,14 +41,14 @@ class CategoriesController
 
         HeaderHelper::setHeaders();
 
-        $response = $this->categories_model->addNewCategory($data);
+        $response = $this->sub_categories_model->addNewSubCategory($data);
 
         if (empty($response)) {
-            ResponseHelper::sendErrorResponse("Failed to add new plant", 500);
+            ResponseHelper::sendErrorResponse("Failed to add Sub Category", 500);
             return;
         }
 
-        ResponseHelper::sendSuccessResponse(null, 'Category added successfully', 201);
+        ResponseHelper::sendSuccessResponse(null, 'Sub Category added successfully', 201);
         return;
     }
 

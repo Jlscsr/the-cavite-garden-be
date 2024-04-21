@@ -1,73 +1,90 @@
 <?php
+
+use Helpers\JWTHelper;
+use Helpers\ResponseHelper;
+use Helpers\HeaderHelper;
+use Helpers\CookieManager;
+
 require_once dirname(__DIR__) . '/config/load_env.php';
-
-require_once dirname(__DIR__) . '/helpers/JWTHelper.php';
-require_once dirname(__DIR__) . '/helpers/ResponseHelper.php';
-require_once dirname(__DIR__) . '/helpers/HeaderHelper.php';
-require_once dirname(__DIR__) . '/helpers/CookieManager.php';
-
-require_once dirname(__DIR__) . '/model/AccountsModel.php';
+require_once dirname(__DIR__) . '/model/CustomersModel.php';
 
 class AuthenticationController
 {
     private $jwt;
-    private $accounts_model;
+    private $customer_model;
     private $cookie_manager;
 
     public function __construct($pdo)
     {
         $this->jwt = new JWTHelper();
-        $this->accounts_model = new AccountsModel($pdo);
+        $this->customer_model = new CustomersModel($pdo);
         $this->cookie_manager = new CookieManager($this->jwt);
     }
 
-    public function register($credentials)
+    public function register($payload)
     {
 
-        if (!is_array($credentials) || empty($credentials)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
+        if (!is_array($payload) || empty($payload)) {
+            ResponseHelper::sendErrorResponse("Invalid payload or payload is empty");
             return;
         }
 
         HeaderHelper::setHeaders();
 
-        $password = $credentials['password'];
+        $password = $payload['password'];
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        $credentials['password'] = $hashed_password;
+        $payload['password'] = $hashed_password;
 
-        $response = $this->accounts_model->addNewAccount($credentials);
+        $response = $this->customer_model->addNewCustomer($payload);
+
+        if (is_string($response)) {
+            ResponseHelper::sendErrorResponse($response, 500);
+            return;
+        }
 
         if (!$response) {
             ResponseHelper::sendErrorResponse('Failed to register new customer', 500);
             return;
         }
 
-        ResponseHelper::sendSuccessResponse(null, 'User registered successfully', 201);
+        ResponseHelper::sendSuccessResponse([], 'User registered successfully', 201);
     }
 
-    public function login($credentials)
+    public function login($payload)
     {
-        if (!is_array($credentials) || empty($credentials)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
+        if (!is_array($payload) || empty($payload)) {
+            ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
             return;
         }
 
         HeaderHelper::setHeaders();
 
-        $email = $credentials['email'];
-        $password = $credentials['password'];
+        $email = $payload['email'];
+        $password = $payload['password'];
 
-        $response = $this->accounts_model->getAccountByEmail($email);
-        $stored_password = $response['data'][0]['password'];
+        $response = $this->customer_model->getAccountByEmail($email);
 
-        if (!password_verify($password, $stored_password)) {
-            ResponseHelper::sendErrorResponse('Invalid email or password', 401);
+        if (!is_array($response) && !$response) {
+            ResponseHelper::sendErrorResponse('Missing email payload');
             return;
         }
 
-        $expiry_date = time() + 3600;
+        if (empty($response)) {
+            ResponseHelper::sendUnauthorizedResponse('Incorrect Email');
+            return;
+        }
 
-        $toBeTokenized = [
+        $stored_password = $response['data'][0]['password'];
+
+        if (!password_verify($password, $stored_password)) {
+            ResponseHelper::sendUnauthorizedResponse('Incorrect Password');
+            return;
+        }
+
+        // 5hrs expiry time for token
+        $expiry_date = time() + (5 * 3600);
+
+        $to_be_tokenized = [
             "id" => $response['data'][0]['id'],
             'email' => $response['data'][0]['email'],
             'password' => $response['data'][0]['password'],
@@ -75,7 +92,7 @@ class AuthenticationController
             'expiry_date' => $expiry_date
         ];
 
-        $token = $this->jwt->encodeData($toBeTokenized);
+        $token = $this->jwt->encodeData($to_be_tokenized);
 
         $this->cookie_manager->setCookiHeader($token, $expiry_date);
 
@@ -95,7 +112,7 @@ class AuthenticationController
 
         if (!isset($headers['Cookie'])) {
             $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthrizedResponse('Invalid Token');
+            ResponseHelper::sendUnauthorizedResponse('Invalid Token');
             return;
         }
 
@@ -106,7 +123,7 @@ class AuthenticationController
 
         if (!$is_token_valid) {
             $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthrizedResponse('Invalid token');
+            ResponseHelper::sendUnauthorizedResponse('Invalid token');
             return;
         }
 

@@ -1,7 +1,9 @@
 <?php
-require_once dirname(__DIR__) . '/helpers/JWTHelper.php';
-require_once dirname(__DIR__) . '/helpers/HeaderHelper.php';
-require_once dirname(__DIR__) . '/helpers/ResponseHelper.php';
+
+use Helpers\JWTHelper;
+use Helpers\ResponseHelper;
+use Helpers\HeaderHelper;
+
 require_once dirname(__DIR__) . '/model/TransactionModel.php';
 
 class TransactionController
@@ -60,7 +62,7 @@ class TransactionController
 
         if (!isset($headers['Cookie'])) {
             $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthrizedResponse('Invalid Token');
+            ResponseHelper::sendUnauthorizedResponse('Invalid Token');
             return;
         }
 
@@ -76,7 +78,11 @@ class TransactionController
             return;
         }
 
-        ResponseHelper::sendSuccessResponse(null, 'Transaction added successfully', 201);
+        ResponseHelper::sendSuccessResponse(
+            $response,
+            'Transaction added successfully',
+            201
+        );
     }
 
     public function updateTransactionStatus($param, $payload)

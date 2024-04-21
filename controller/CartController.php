@@ -1,7 +1,9 @@
 <?php
-require_once dirname(__DIR__) . '/helpers/JWTHelper.php';
-require_once dirname(__DIR__) . '/helpers/HeaderHelper.php';
-require_once dirname(__DIR__) . '/helpers/ResponseHelper.php';
+
+use Helpers\JWTHelper;
+use Helpers\ResponseHelper;
+use Helpers\HeaderHelper;
+
 require_once dirname(__DIR__) . '/model/CartModel.php';
 
 class CartController
@@ -40,7 +42,7 @@ class CartController
             return;
         }
 
-        ResponseHelper::sendSuccessResponse(null, 'Product added to cart successfully', 201);
+        ResponseHelper::sendSuccessResponse([], 'Product added to cart successfully', 201);
     }
 
     public function getCostumerCartProducts()

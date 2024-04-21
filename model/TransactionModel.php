@@ -1,5 +1,7 @@
 <?php
-require_once dirname(__DIR__) . '/helpers/ResponseHelper.php';
+
+use Helpers\ResponseHelper;
+
 require_once dirname(__DIR__) . '/model/PlantModel.php';
 
 
@@ -54,7 +56,7 @@ class TransactionModel
                 $costumer_id = $transaction_value['costumer_id'];
                 $transaction_id = $transaction_value['id'];
 
-                $query = "SELECT id, first_name, last_name FROM customer_tb WHERE id = :id";
+                $query = "SELECT id, first_name, last_name FROM customers_tb WHERE id = :id";
                 $statement = $this->pdo->prepare($query);
                 $statement->bindValue(':id', $costumer_id, PDO::PARAM_STR);
 
@@ -132,7 +134,7 @@ class TransactionModel
         $product_total_price = 0;
         $delivery_method = $data['delivery_method'];
         $payment_method = $data['payment_method'];
-        $shipping_address = $data['shipping_address'];
+        $shipping_address = $data['shipping_address'] ?? null;
         $status = "pending";
 
         foreach ($data as $key => $value) {
@@ -157,7 +159,6 @@ class TransactionModel
             if ($statement->rowCount() > 0) {
                 $transaction_id = $this->pdo->lastInsertId();
 
-
                 foreach ($data as $key => $value) {
                     if (is_array($value) && !empty($value)) {
                         $query = "INSERT INTO product_transaction_tb (transaction_id, product_id, price, quantity) VALUES (:transaction_id, :product_id, :price, :quantity)";
@@ -177,8 +178,22 @@ class TransactionModel
                     }
                 }
 
-                if ($query_status) {
-                    return $statement->rowCount() > 0;
+                $query = "DELETE FROM cart_tb WHERE customer_id = :customer_id";
+                $statement = $this->pdo->prepare($query);
+                $statement->bindValue(':customer_id', $costumer_id, PDO::PARAM_STR);
+
+                try {
+                    $statement->execute();
+
+                    $response = [
+                        'customer_id' => $costumer_id,
+                        'transaction_id' => $transaction_id,
+                        'status' => $status
+                    ];
+
+                    return $response;
+                } catch (PDOException $e) {
+                    ResponseHelper::sendErrorResponse($e->getMessage(), 500);
                 }
             }
         } catch (PDOException $e) {
