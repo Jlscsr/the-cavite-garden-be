@@ -224,14 +224,4 @@ class CustomersModel
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
-
-    public function editCustomer()
-    {
-        //
-    }
-
-    public function deleteCustomer()
-    {
-        //
-    }
 }

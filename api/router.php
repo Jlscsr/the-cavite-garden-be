@@ -6,17 +6,12 @@ use Helpers\ResponseHelper;
 require_once dirname(__DIR__) . '/config/db_connect.php';
 require_once dirname(__DIR__) . '/api/routes.php';
 
+// This code sets the necessary headers for the response.
+HeaderHelper::SendPreflighthHeaders();
+HeaderHelper::setResponseHeaders();
 
 $pdo = db_connect();
 $route = new Route();
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    HeaderHelper::setHeaders();
-    http_response_code(200);
-    exit();
-}
-
-HeaderHelper::setHeaders();
 
 $url = $_GET['url'] ?? '';
 
@@ -35,23 +30,23 @@ if ($middleware_required) {
         $is_valid = new $middleware();
 
         if (!$is_valid) {
-            ResponseHelper::sendErrorResponse(["error" => "unauthorized", "message" => "User is not authenticated"], 401);
+            ResponseHelper::sendUnauthorizedResponse('Invalid Token or User is not authorized');
             return;
         }
     } catch (Exception $e) {
-        ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        ResponseHelper::sendErrorResponse($e->getMessage());
         return;
     }
 }
 
 list($controller, $method) = explode('@', is_array($handler['handler']) ? $handler['handler']['handler'] : $handler['handler']);
 
+require_once dirname(__DIR__) . '/controller' . '/' . $controller . '.php';
+
+$controller = new $controller($pdo);
+
 switch ($request_method) {
     case 'GET':
-        require_once dirname(__DIR__) . '/controller' . '/' . $controller . '.php';
-
-        $controller = new $controller($pdo);
-
         if (isset($handler['params'])) {
             $controller->$method($handler['params']);
         } else {
@@ -60,10 +55,6 @@ switch ($request_method) {
         break;
     case 'POST':
         $payload = json_decode(file_get_contents('php://input'), true);
-
-        require_once dirname(__DIR__) . '/controller' . '/' . $controller . '.php';
-
-        $controller = new $controller($pdo);
 
         if ($payload === null) {
             ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
@@ -75,10 +66,6 @@ switch ($request_method) {
     case 'PUT':
         $payload = json_decode(file_get_contents('php://input'), true);
 
-        require_once dirname(__DIR__) . '/controller' . '/' . $controller . '.php';
-
-        $controller = new $controller($pdo);
-
         if ($payload === null) {
             ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
             return;
@@ -88,14 +75,9 @@ switch ($request_method) {
         break;
 
     case 'DELETE':
-        require_once dirname(__DIR__) . '/controller' . '/' . $controller . '.php';
-
-        $controller = new $controller($pdo);
-
         $controller->$method($handler['params']);
         break;
     default:
-        http_response_code(405);
-        echo json_encode(["error" => "Method not allowed"]);
+        ResponseHelper::sendErrorResponse('Invalid Request Method', 400);
         break;
 }

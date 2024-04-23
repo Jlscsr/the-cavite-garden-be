@@ -1,9 +1,13 @@
 <?php
 
+namespace Models;
+
 use Helpers\ResponseHelper;
 
 use Models\CategoriesModel;
 use Models\SubCategoriesModel;
+
+use PDO;
 
 class PlantModel
 {
@@ -18,6 +22,11 @@ class PlantModel
         $this->sub_categories_model = new SubCategoriesModel($pdo);
     }
 
+    /**
+     * Retrieves all plants from the database.
+     *
+     * @return array An array of associative arrays representing the plants.
+     */
     public function getAllPlants()
     {
         $query = "SELECT * FROM products_tb";
@@ -31,59 +40,12 @@ class PlantModel
         }
     }
 
-    public function getPlantById($plant_id)
-    {
-        $plant_id = (int)$plant_id;
-        if (!$plant_id) {
-            return [];
-        }
-
-        $query = "SELECT * FROM products_tb WHERE id = :plant_id";
-        $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':plant_id', $plant_id, PDO::PARAM_STR);
-
-        try {
-            $statement->execute();
-
-            if ($statement->rowCount() > 0) {
-                $plant_details = $statement->fetch(PDO::FETCH_ASSOC);
-                $category_id = $plant_details['categoryId'];
-                $sub_category_id = $plant_details['subCategoryId'];
-
-                $query = "SELECT name FROM products_categories_tb WHERE id = :category_id";
-                $statement = $this->pdo->prepare($query);
-                $statement->bindValue(':category_id', $category_id, PDO::PARAM_STR);
-
-                try {
-                    $statement->execute();
-                    $category_name = $statement->fetch(PDO::FETCH_ASSOC);
-                    $plant_details['category_name'] = $category_name['name'];
-
-                    $query = "SELECT name FROM products_sub_categories_tb WHERE id = :sub_category_id";
-                    $statement = $this->pdo->prepare($query);
-                    $statement->bindValue(':sub_category_id', $sub_category_id, PDO::PARAM_STR);
-
-                    try {
-                        $statement->execute();
-                        $sub_category_name = $statement->fetch(PDO::FETCH_ASSOC);
-
-                        if ($statement->rowCount() > 0) {
-                            $plant_details['sub_category_name'] = $sub_category_name['name'];
-                        }
-                    } catch (PDOException $e) {
-                        return [];
-                    }
-
-                    return $plant_details;
-                } catch (PDOException $e) {
-                    return [];
-                }
-            }
-        } catch (PDOException $e) {
-            return [];
-        }
-    }
-
+    /**
+     * Retrieves all plants from the database that belong to a specific category.
+     *
+     * @param string $category_id The ID of the category.
+     * @return array An array of associative arrays representing the plants.
+     */
     public function getAllPlantsByCategory($category_id)
     {
         if (!is_string($category_id)) {
@@ -103,19 +65,54 @@ class PlantModel
         }
     }
 
-    public function getAllPlantCategories()
+
+    /**
+     * Retrieves the details of a plant by its ID.
+     *
+     * @param int $plant_id The ID of the plant.
+     * @return array An associative array containing the details of the plant, including the category and sub-category names.
+     */
+    public function getPlantById($plant_id)
     {
-        $query = "SELECT * FROM products_categories_tb";
+        $plant_id = (int)$plant_id;
+        if (!$plant_id) {
+            return [];
+        }
+
+        $query = "SELECT * FROM products_tb WHERE id = :plant_id";
         $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':plant_id', $plant_id, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($statement->rowCount() > 0) {
+                $plant_details = $statement->fetch(PDO::FETCH_ASSOC);
+                $category_id = $plant_details['categoryId'];
+                $sub_category_id = $plant_details['subCategoryId'];
+
+                $category_name = $this->categories_model->getCategoriesColumnBy('name', 'id', $category_id);
+                $sub_category_name = $this->sub_categories_model->getSubCategoryNameById($sub_category_id);
+
+
+                $plant_details['category_name'] = $category_name['name'] ?? null;
+                $plant_details['sub_category_name'] = $sub_category_name['name'] ?? null;
+
+                return $plant_details;
+            }
         } catch (PDOException $e) {
             return [];
         }
     }
 
+
+    /**
+     * Adds a new plant to the products table based on the provided data.
+     *
+     * @param array $data An array containing the details of the new plant.
+     * @throws PDOException If an error occurs during database operation.
+     * @return bool Whether the plant was successfully added or not.
+     */
     public function addNewPlant($data)
     {
 
@@ -132,30 +129,21 @@ class PlantModel
         $stock = $data['stock'];
         $product_description = $data['product_description'];
 
-        $get_category_id_query = "SELECT id FROM products_categories_tb WHERE name = :category";
-        $statement = $this->pdo->prepare($get_category_id_query);
-        $statement->bindValue(':category', $plant_category, PDO::PARAM_STR);
+        $category_id = $this->categories_model->getCategoriesColumnBy('id', 'name', $plant_category);
 
         $category_id = null;
-        $sub_category_id = null;
-        try {
-            $statement->execute();
-            $category_id = $statement->fetchColumn();
 
-            if ($plant_sub_category !== '') {
-                $get_sub_category_id_query = "SELECT id FROM products_sub_categories_tb WHERE name = :sub_category";
-                $statement = $this->pdo->prepare($get_sub_category_id_query);
-                $statement->bindValue(':sub_category', $plant_sub_category, PDO::PARAM_STR);
+        if ($plant_sub_category !== '') {
+            $get_sub_category_id_query = "SELECT id FROM products_sub_categories_tb WHERE name = :sub_category";
+            $statement = $this->pdo->prepare($get_sub_category_id_query);
+            $statement->bindValue(':sub_category', $plant_sub_category, PDO::PARAM_STR);
 
-                try {
-                    $statement->execute();
-                    $sub_category_id = $statement->fetchColumn();
-                } catch (PDOException $e) {
-                    ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-                }
+            try {
+                $statement->execute();
+                $sub_category_id = $statement->fetchColumn();
+            } catch (PDOException $e) {
+                ResponseHelper::sendErrorResponse($e->getMessage(), 500);
             }
-        } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
 
         if (!$sub_category_id) {
@@ -186,6 +174,14 @@ class PlantModel
         }
     }
 
+    /**
+     * Edits a plant in the database.
+     *
+     * @param string $id The ID of the plant to edit.
+     * @param array $data An array containing the updated plant data.
+     * @throws PDOException If there is an error executing the query.
+     * @return bool Returns true if the plant was successfully edited, false otherwise.
+     */
     public function editPlant($id, $data)
     {
 
@@ -227,6 +223,13 @@ class PlantModel
         }
     }
 
+    /**
+     * Deletes a plant from the database based on the given ID.
+     *
+     * @param string $id The ID of the plant to be deleted.
+     * @return bool Returns true if the plant was successfully deleted, false otherwise.
+     * @throws PDOException If there is an error executing the query.
+     */
     public function deletePlant($id)
     {
         if (!is_string($id)) {

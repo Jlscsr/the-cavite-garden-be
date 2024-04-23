@@ -27,9 +27,15 @@ class EmployeesController
     {
         $this->cookie_manager->validateCookiePressence();
 
-        $token = $this->cookie_manager->getCookieHeader();
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
 
-        $decoded_token = $this->jwt->validateAndEncodeToken($token);
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
 
         if ($decoded_token->role !== 'admin') {
             ResponseHelper::sendUnauthorizedResponse('Unauthorized');
@@ -39,7 +45,7 @@ class EmployeesController
         $lists_of_employees = $this->employees_model->getAllEmployees();
 
         if (empty($lists_of_employees)) {
-            ResponseHelper::sendSuccessResponse([], 'No employees found', 200);
+            ResponseHelper::sendErrorResponse('No employees found', 404);
             return;
         }
 
@@ -48,7 +54,7 @@ class EmployeesController
 
     public function getEmployeeById()
     {
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $headers = getallheaders();
 
@@ -61,7 +67,7 @@ class EmployeesController
         $token = $headers['Cookie'];
         $token = str_replace("tcg_access_token=", "", $token);
 
-        $customer_id = $this->jwt->decodeData($token)->id;
+        $customer_id = $this->jwt->decodeJWTData($token)->id;
 
         $response = $this->employees_model->getEmployeeById($customer_id);
 
@@ -83,9 +89,15 @@ class EmployeesController
 
         $this->cookie_manager->validateCookiePressence();
 
-        $token = $this->cookie_manager->getCookieHeader();
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
 
-        $decoded_token = $this->jwt->validateAndEncodeToken($token);
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
 
         if ($decoded_token->role !== 'admin') {
             ResponseHelper::sendUnauthorizedResponse('Unauthorized');
@@ -117,9 +129,15 @@ class EmployeesController
 
         $this->cookie_manager->validateCookiePressence();
 
-        $token = $this->cookie_manager->getCookieHeader();
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
 
-        $decoded_token = $this->jwt->validateAndEncodeToken($token);
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
 
         if ($decoded_token->role !== 'admin') {
             ResponseHelper::sendUnauthorizedResponse('Unauthorized');

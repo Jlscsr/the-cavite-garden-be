@@ -6,6 +6,7 @@ use Helpers\ResponseHelper;
 use Models\SubCategoriesModel;
 
 use PDO;
+use PDOException;
 
 class CategoriesModel
 {
@@ -16,6 +17,7 @@ class CategoriesModel
     {
         $this->pdo = $pdo;
         $this->sub_categories_model = new SubCategoriesModel($pdo);
+        $this->column_names = ['id', 'name', 'description'];
     }
 
     public function getAllPlantCategories()
@@ -149,6 +151,33 @@ class CategoriesModel
 
             $delete_query->execute();
             return $delete_query->rowCount() > 0;
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
+
+    public function getCategoriesColumnBy($column, $condition_column, $condition_value)
+    {
+        if (!is_string($column) || !is_string($condition_column) || !is_string($condition_value)) {
+            return [];
+        }
+
+        $condition = null;
+
+        foreach ($this->column_names as $column_name) {
+            if ($column_name === $column) {
+                $condition = "$condition_column = :value";
+                break;
+            }
+        }
+
+        $query = "SELECT $column FROM products_categories_tb WHERE $condition";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':value', $condition_value, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }

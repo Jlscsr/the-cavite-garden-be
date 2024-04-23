@@ -2,6 +2,7 @@
 
 class Route
 {
+    private $routes;
 
     public function __construct()
     {

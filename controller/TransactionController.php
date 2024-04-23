@@ -25,7 +25,7 @@ class TransactionController
             ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
             return;
         }
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
         $status = null;
         if (strpos($param['status'], '-') !== false) {
             $parts = explode("-", $param['status']);
@@ -57,7 +57,7 @@ class TransactionController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
         $headers = getallheaders();
 
         if (!isset($headers['Cookie'])) {
@@ -69,7 +69,7 @@ class TransactionController
         $token = $headers['Cookie'];
         $token = str_replace("tcg_access_token=", "", $token);
 
-        $customer_id = $this->jwt->decodeData($token)->id;
+        $customer_id = $this->jwt->decodeJWTData($token)->id;
 
         $response = $this->transaction_model->addNewTransaction($customer_id, $data);
 
@@ -92,7 +92,7 @@ class TransactionController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $transaction_id = $param['id'];
         $status = $payload['status'];

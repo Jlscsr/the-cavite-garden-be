@@ -29,10 +29,10 @@ class AuthenticationController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $password = $payload['password'];
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT, ['cost' => 15]);
         $payload['password'] = $hashed_password;
 
         $response = $this->customer_model->addNewCustomer($payload);
@@ -57,7 +57,7 @@ class AuthenticationController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $email = $payload['email'];
         $password = $payload['password'];
@@ -92,7 +92,7 @@ class AuthenticationController
             'expiry_date' => $expiry_date
         ];
 
-        $token = $this->jwt->encodeData($to_be_tokenized);
+        $token = $this->jwt->encodeDataToJWT($to_be_tokenized);
 
         $this->cookie_manager->setCookiHeader($token, $expiry_date);
 
@@ -102,26 +102,18 @@ class AuthenticationController
     public function logout()
     {
         $this->cookie_manager->resetCookieHeader();
-        ResponseHelper::sendSuccessResponse(null, 'Logout Succesfully', 200);
+        ResponseHelper::sendSuccessResponse([], 'Logout Succesfully', 200);
         return;
     }
 
     public function checkToken()
     {
-        $headers = getallheaders();
 
-        if (!isset($headers['Cookie'])) {
-            $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthorizedResponse('Invalid Token');
-            return;
-        }
+        $this->cookie_manager->validateCookiePressence();
 
-        $token = $headers['Cookie'];
-        $token = str_replace("tcg_access_token=", "", $token);
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
 
-        $is_token_valid = $this->cookie_manager->validateToken($token);
-
-        if (!$is_token_valid) {
+        if (!$this->jwt->validateToken($token)) {
             $this->cookie_manager->resetCookieHeader();
             ResponseHelper::sendUnauthorizedResponse('Invalid token');
             return;

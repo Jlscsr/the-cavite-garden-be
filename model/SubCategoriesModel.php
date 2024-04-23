@@ -96,4 +96,23 @@ class SubCategoriesModel
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
+
+    public function getSubCategoryNameById($sub_category_id)
+    {
+        if (!is_integer($sub_category_id)) {
+            return [];
+        }
+
+        $query = "SELECT name FROM products_sub_categories_tb WHERE id = :sub_category_id";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':sub_category_id', $sub_category_id, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+            return $statement->fetchColumn();
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            exit;
+        }
+    }
 }

@@ -19,7 +19,7 @@ class SubCategoriesController
      */
     public function getAllPlantSubCategories()
     {
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $product_categories = $this->sub_categories_model->getAllPlantSubCategories();
 
@@ -39,7 +39,7 @@ class SubCategoriesController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $response = $this->sub_categories_model->addNewSubCategory($data);
 
@@ -60,7 +60,7 @@ class SubCategoriesController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $response = $this->categories_model->editCategory($param['id'], $data);
         if (empty($response)) {
@@ -79,7 +79,7 @@ class SubCategoriesController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $response = $this->categories_model->deleteCategory($param['id']);
 

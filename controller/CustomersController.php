@@ -24,9 +24,15 @@ class CustomersController
     {
         $this->cookie_manager->validateCookiePressence();
 
-        $token = $this->cookie_manager->getCookieHeader();
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
 
-        $decoded_token = $this->jwt->validateAndEncodeToken($token);
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
 
         if ($decoded_token->role !== 'admin') {
             ResponseHelper::sendUnauthorizedResponse('Unauthorized');
@@ -46,14 +52,20 @@ class CustomersController
     public function getCustomerById()
     {
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $this->cookie_manager->validateCookiePressence();
 
-        $token = $this->cookie_manager->getCookieHeader();
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
 
-        $decoded_token = $this->jwt->validateAndEncodeToken($token);
+        $is_token_valid = $this->jwt->validateToken($token);
 
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
         $customer_id = $decoded_token->id;
 
         $response = $this->customer_model->getCustomerById($customer_id);
@@ -73,7 +85,7 @@ class CustomersController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        HeaderHelper::setResponseHeaders();
 
         $headers = getallheaders();
 
@@ -86,7 +98,7 @@ class CustomersController
         $token = $headers['Cookie'];
         $token = str_replace("tcg_access_token=", "", $token);
 
-        $customer_id = $this->jwt->decodeData($token)->id;
+        $customer_id = $this->jwt->decodeJWTData($token)->id;
 
         $response = $this->customer_model->addNewUserAddress($customer_id, $data);
 

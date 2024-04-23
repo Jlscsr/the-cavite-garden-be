@@ -1,23 +1,27 @@
 <?php
 
+// Helpers
 use Helpers\JWTHelper;
 use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
+use Helpers\CookieManager;
 
-require_once dirname(__DIR__) . '/model/CartModel.php';
+// Models
+use Models\CartModel;
 
 class CartController
 {
-    private $pdo;
     private $jwt;
     private $cart_model;
-
+    private $cookie_manager;
 
     public function __construct($pdo)
     {
-        $this->pdo = $pdo;
         $this->jwt = new JWTHelper();
         $this->cart_model = new CartModel($pdo);
+        $this->cookie_manager = new CookieManager($this->jwt);
+
+        HeaderHelper::setResponseHeaders();
     }
 
     public function addToCart($data)
@@ -27,12 +31,17 @@ class CartController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        $this->cookie_manager->validateCookiePressence();
 
-        $token = getallheaders()['Cookie'];
-        $token = str_replace("tcg_access_token=", "", $token);
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
 
-        $decoded_token = $this->jwt->decodeData($token);
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
         $data['customer_id'] = $decoded_token->id;
 
         $response = $this->cart_model->addProductToCart($data);
@@ -48,10 +57,18 @@ class CartController
     public function getCostumerCartProducts()
     {
 
-        $token = getallheaders()['Cookie'];
-        $token = str_replace("tcg_access_token=", "", $token);
 
-        $decoded_token = $this->jwt->decodeData($token);
+        $this->cookie_manager->validateCookiePressence();
+
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
+
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
         $customer_id = $decoded_token->id;
 
         $response = $this->cart_model->getCostumerCartProducts($customer_id);
@@ -71,17 +88,25 @@ class CartController
             return;
         }
 
-        HeaderHelper::setHeaders();
+        $this->cookie_manager->validateCookiePressence();
 
-        $token = getallheaders()['Cookie'];
-        $token = str_replace("tcg_access_token=", "", $token);
-        $customer_id = $this->jwt->decodeData($token)->id;
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+        $is_token_valid = $this->jwt->validateToken($token);
+
+        if (!$is_token_valid) {
+            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
+            return;
+        }
+
+        $decoded_token = $this->jwt->decodeJWTData($token);
+        $customer_id = $decoded_token->id;
+
         $cart_product_id = $param['id'];
         $cart_product_id = (int) $cart_product_id;
 
 
         $response = $this->cart_model->deleteProductFromCart($customer_id, $cart_product_id);
 
-        ResponseHelper::sendSuccessResponse(null, 'Product deleted from cart successfully', 201);
+        ResponseHelper::sendSuccessResponse([], 'Product deleted from cart successfully', 201);
     }
 }

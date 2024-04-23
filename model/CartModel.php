@@ -1,5 +1,7 @@
 <?php
 
+namespace Models;
+
 use Helpers\ResponseHelper;
 
 require_once dirname(__DIR__) . '/model/PlantModel.php';
@@ -15,14 +17,43 @@ class CartModel
         $this->plant_model = new PlantModel($pdo);
     }
 
-    public function getCartProductsByCostumerId($param)
+    public function getCostumerCartProducts($costumer_id)
     {
-        if (!is_string($param['customer_id']) || empty($param)) {
+
+        if (!is_integer($costumer_id) || empty($costumer_id)) {
             ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
             return;
         }
 
-        $customer_id = $param['customer_id'];
+        $query = "SELECT * FROM cart_tb WHERE customer_id = :customer_id";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':customer_id', $costumer_id, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+            $product_ids = [];
+            $products_lists = [];
+            $cart_products = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($cart_products as $cart_product) {
+                $product_ids[] = $cart_product['product_id'];
+            }
+
+            foreach ($product_ids as $product_id) {
+                $product = $this->plant_model->getPlantById($product_id);
+                $products_lists[] = $product;
+            }
+
+            $products = [];
+            foreach ($cart_products as $cart_product) {
+                $cart_product['product_info'] = $products_lists[array_search($cart_product['product_id'], array_column($products_lists, 'id'))];
+                $products[] = $cart_product;
+            }
+            $cart_products = $products;
+            return $cart_products;
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
     }
 
     public function addProductToCart($data)
@@ -88,44 +119,7 @@ class CartModel
         }
     }
 
-    public function getCostumerCartProducts($costumer_id)
-    {
 
-        if (!is_integer($costumer_id) || empty($costumer_id)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
-            return;
-        }
-
-        $query = "SELECT * FROM cart_tb WHERE customer_id = :customer_id";
-        $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':customer_id', $costumer_id, PDO::PARAM_STR);
-
-        try {
-            $statement->execute();
-            $product_ids = [];
-            $products_lists = [];
-            $cart_products = $statement->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach ($cart_products as $cart_product) {
-                $product_ids[] = $cart_product['product_id'];
-            }
-
-            foreach ($product_ids as $product_id) {
-                $product = $this->plant_model->getPlantById($product_id);
-                $products_lists[] = $product;
-            }
-
-            $products = [];
-            foreach ($cart_products as $cart_product) {
-                $cart_product['product_info'] = $products_lists[array_search($cart_product['product_id'], array_column($products_lists, 'id'))];
-                $products[] = $cart_product;
-            }
-            $cart_products = $products;
-            return $cart_products;
-        } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-        }
-    }
 
     public function deleteProductFromCart($customer_id, $cart_product_id)
     {

@@ -21,39 +21,52 @@ class JWTHelper
         $this->hash_algorithm = $_ENV['JWT_HASH_ALGORITHM'];
     }
 
-    public function getSecretKey()
-    {
-        return $this->secret_key;
-    }
-
-    public function encodeData($data)
+    /**
+     * Encodes the given data into a JSON Web Token (JWT) using the specified secret key and hash algorithm.
+     *
+     * @param mixed $data The data to be encoded into a JWT.
+     * @return string The encoded JWT.
+     */
+    public function encodeDataToJWT($data)
     {
         $token = JWT::encode($data, $this->secret_key, $this->hash_algorithm);
         return $token;
     }
 
-    public function decodeData($token)
+    /**
+     * Decodes the given JWT token and returns the decoded data.
+     *
+     * @param string $token The JWT token to be decoded.
+     * @throws Exception If there is an error decoding the token.
+     * @return mixed The decoded data from the JWT token.
+     */
+    public function decodeJWTData($token)
     {
         $data = JWT::decode($token, new Key($this->secret_key, $this->hash_algorithm));
         return $data;
     }
 
-    public function validateAndEncodeToken($token)
+    /**
+     * Validates the authenticity and expiration of the JWT token.
+     *
+     * @param mixed $token The JWT token to be validated.
+     * @throws \Firebase\JWT\SignatureInvalidException If the token signature is invalid.
+     * @return bool Returns true if the token is valid, false otherwise.
+     */
+    public function validateToken($token)
     {
         try {
-            $data = $this->decodeData($token);
-
+            $data = $this->decodeJWTData($token);
             $expiry_date = $data->expiry_date;
 
             if ($expiry_date < time()) {
-                ResponseHelper::sendUnauthorizedResponse('Token is expired');
-                exit;
+                return false;
             }
 
-            return $data;
+            return true;
         } catch (\Firebase\JWT\SignatureInvalidException $e) {
             ResponseHelper::sendUnauthorizedResponse('Invalid Token Signature');
-            exit();
+            exit;
         }
     }
 }
