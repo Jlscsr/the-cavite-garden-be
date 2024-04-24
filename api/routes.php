@@ -88,7 +88,7 @@ class Route
                 "middleware" => false
             ],
             "api/plant/category/:id" => [
-                "handler" => "PlantController@getAllPlantsByCategory",
+                "handler" => "PlantController@getAllProductsByCategory",
                 "middleware" => false
             ],
             "api/plant/delete/:id" => [
@@ -104,11 +104,11 @@ class Route
                 "middleware" => false,
             ],
             "api/plant/add" => [
-                "handler" => "PlantController@addNewPlant",
+                "handler" => "PlantController@addNewProduct",
                 "middleware" => false
             ],
             "api/plant/:id" => [
-                "handler" => "PlantController@getPlantById",
+                "handler" => "PlantController@getProductByID",
                 "middleware" => false,
             ],
             "api/categories" => [

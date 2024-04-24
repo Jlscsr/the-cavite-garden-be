@@ -77,7 +77,7 @@ class TransactionModel
 
                             foreach ($product_transaction as $key => $value) {
                                 $product_id = $value['product_id'];
-                                $response = $this->plant_model->getPlantById($product_id);
+                                $response = $this->plant_model->getProductByID($product_id);
 
                                 if (!$response) {
                                     ResponseHelper::sendErrorResponse("Product not found", 404);

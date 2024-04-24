@@ -1,5 +1,7 @@
 <?php
 
+namespace Models;
+
 use Helpers\ResponseHelper;
 use Models\EmployeesModel;
 use Models\HelperModel;
@@ -9,6 +11,10 @@ class CustomersModel
     private $pdo;
     private $employee_model;
     private $helper_model;
+
+    // Constants
+    private const CUSTOMERS_TABLE = 'customers_tb';
+    private const CUSTOMER_ADDRESS_TABLE = 'customer_address_tb';
 
     public function __construct($pdo)
     {
@@ -26,7 +32,7 @@ class CustomersModel
         phone_number,
         email,
         created_at,
-        updated_at FROM customers_tb";
+        updated_at FROM " . self::CUSTOMERS_TABLE;
 
         $statement = $this->pdo->prepare($query);
 
@@ -57,7 +63,7 @@ class CustomersModel
             return [];
         }
 
-        $query = "SELECT * FROM customers_shipping_address_tb WHERE customer_id = :customer_id";
+        $query = "SELECT * FROM " . self::CUSTOMER_ADDRESS_TABLE . " WHERE customer_id = :customer_id";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
 
@@ -77,7 +83,7 @@ class CustomersModel
             return false;
         }
 
-        $query = "SELECT * FROM customers_tb WHERE email = :email";
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :email";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':email', $email, PDO::PARAM_STR);
 
@@ -105,7 +111,7 @@ class CustomersModel
             return [];
         }
 
-        $query = "SELECT id, first_name, last_name, phone_number, birthdate, email FROM customers_tb WHERE id = :customer_id";
+        $query = "SELECT id, first_name, last_name, phone_number, birthdate, email FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customer_id";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
 
@@ -144,7 +150,7 @@ class CustomersModel
         $email = $customerData['email'];
         $password = $customerData['password'];
 
-        $query = "INSERT INTO customers_tb (first_name, last_name, phone_number, birthdate, email, password) 
+        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (first_name, last_name, phone_number, birthdate, email, password) 
             VALUES (:first_name, :last_name, :phone_number, :birthdate, :email, :password)";
 
         $statement = $this->pdo->prepare($query);
@@ -178,7 +184,7 @@ class CustomersModel
             return false;
         }
 
-        $query = "SELECT * FROM customers_tb WHERE email = :email";
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :email";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':email', $email, PDO::PARAM_STR);
 
@@ -206,16 +212,23 @@ class CustomersModel
         $street_blk_lot = $data['street_blk_lot'];
         $land_mark = $data['landmark'];
 
-        $query = "INSERT INTO customers_shipping_address_tb (customer_id, label , region, province, municipality, barangay, street_blk_lot, landmark) VALUES (:customer_id, :label, :region, :province, :city, :barangay, :street_blk_lot, :landmark)";
+        $query = "INSERT INTO " . self::CUSTOMER_ADDRESS_TABLE . " (customer_id, label , region, province, municipality, barangay, street_blk_lot, landmark) VALUES (:customer_id, :label, :region, :province, :city, :barangay, :street_blk_lot, :landmark)";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
-        $statement->bindValue(':label', $address_label, PDO::PARAM_STR);
-        $statement->bindValue(':region', $region, PDO::PARAM_STR);
-        $statement->bindValue(':province', $province, PDO::PARAM_STR);
-        $statement->bindValue(':city', $city, PDO::PARAM_STR);
-        $statement->bindValue(':barangay', $barangay, PDO::PARAM_STR);
-        $statement->bindValue(':street_blk_lot', $street_blk_lot, PDO::PARAM_STR);
-        $statement->bindValue(':landmark', $land_mark, PDO::PARAM_STR);
+
+        $bind_params = [
+            ':customer_id' => $customer_id,
+            ':label' => $address_label,
+            ':region' => $region,
+            ':province' => $province,
+            ':city' => $city,
+            ':barangay' => $barangay,
+            ':street_blk_lot' => $street_blk_lot,
+            ':landmark' => $land_mark,
+        ];
+
+        foreach ($bind_params as $param => $value) {
+            $statement->bindValue($param, $value, PDO::PARAM_STR);
+        }
 
         try {
             $statement->execute();

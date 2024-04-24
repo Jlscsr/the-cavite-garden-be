@@ -36,7 +36,7 @@ class PlantModel
             $statement->execute();
             return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return [];
+            ResponseHelper::sendDatabaseErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -46,22 +46,24 @@ class PlantModel
      * @param string $category_id The ID of the category.
      * @return array An array of associative arrays representing the plants.
      */
-    public function getAllPlantsByCategory($category_id)
+    public function getAllProductsByCategory($categoryID)
     {
-        if (!is_string($category_id)) {
-            return [];
+        if (!$categoryID) {
+            ResponseHelper::sendErrorResponse("Invalid category ID", 400);
+            return;
         }
 
-        $query = "SELECT * FROM products_tb WHERE categoryId = :category_id";
-        $statement = $this->pdo->prepare($query);
+        $categoryID = (int) $categoryID;
 
-        $statement->bindValue(':category_id', $category_id, PDO::PARAM_STR);
+        $query = "SELECT * FROM products_tb WHERE categoryId = :categoryId";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':categoryId', $categoryID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
             return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return [];
+            ResponseHelper::sendDatabaseErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -72,36 +74,38 @@ class PlantModel
      * @param int $plant_id The ID of the plant.
      * @return array An associative array containing the details of the plant, including the category and sub-category names.
      */
-    public function getPlantById($plant_id)
+    public function getProductByID($productID)
     {
-        $plant_id = (int)$plant_id;
-        if (!$plant_id) {
-            return [];
+        if (!$productID) {
+            ResponseHelper::sendErrorResponse("Invalid or missing product ID parameter", 400);
         }
 
-        $query = "SELECT * FROM products_tb WHERE id = :plant_id";
+        $productID = (int) $productID;
+
+        $query = "SELECT * FROM products_tb WHERE id = :plantID";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':plant_id', $plant_id, PDO::PARAM_STR);
+        $statement->bindValue(':plantID', $productID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
 
             if ($statement->rowCount() > 0) {
-                $plant_details = $statement->fetch(PDO::FETCH_ASSOC);
-                $category_id = $plant_details['categoryId'];
-                $sub_category_id = $plant_details['subCategoryId'];
+                $plantDetails = $statement->fetch(PDO::FETCH_ASSOC);
 
-                $category_name = $this->categories_model->getCategoriesColumnBy('name', 'id', $category_id);
-                $sub_category_name = $this->sub_categories_model->getSubCategoryNameById($sub_category_id);
+                $categoryID = $plantDetails['categoryId'];
+                $subCategoryID = $plantDetails['subCategoryId'];
+
+                $categoryName = $this->categories_model->getCategoriesColumnBy('name', 'id', $categoryID);
+                $subCategoryName = $this->sub_categories_model->getSubCategoriesColumnBy('name', 'id', $subCategoryID);
 
 
-                $plant_details['category_name'] = $category_name['name'] ?? null;
-                $plant_details['sub_category_name'] = $sub_category_name['name'] ?? null;
+                $plantDetails['category_name'] = $categoryName['name'] ?? null;
+                $plantDetails['sub_category_name'] = $subCategoryName['name'] ?? null;
 
-                return $plant_details;
+                return $plantDetails;
             }
         } catch (PDOException $e) {
-            return [];
+            ResponseHelper::sendDatabaseErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -113,62 +117,60 @@ class PlantModel
      * @throws PDOException If an error occurs during database operation.
      * @return bool Whether the plant was successfully added or not.
      */
-    public function addNewPlant($data)
+    public function addNewProduct($payload)
     {
 
-        if (!is_array($data) && empty($data)) {
-            return [];
+        if (!is_array($payload) && empty($payload)) {
+            ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
+            return;
         }
 
-        $product_photo_url = $data['product_photo_url'];
-        $plant_name = $data['product_name'];
-        $plant_category = $data['product_category'];
-        $plant_sub_category = $data['product_sub_category'] ?? '';
-        $plant_price = $data['product_price'];
-        $pot_size = $data['pot_size'] ?? '';
-        $stock = $data['stock'];
-        $product_description = $data['product_description'];
+        $productPhotoURL = $payload['product_photo_url'];
+        $plantName = $payload['product_name'];
+        $plantCategory = $payload['product_category'];
+        $plantSubCategory = $payload['product_sub_category'] ?? '';
+        $plantPrice = $payload['product_price'];
+        $potSize = $payload['pot_size'] ?? '';
+        $stock = $payload['stock'];
+        $productDescription = $payload['product_description'];
 
-        $category_id = $this->categories_model->getCategoriesColumnBy('id', 'name', $plant_category);
+        $categoryID = $this->categories_model->getCategoriesColumnBy('id', 'name', $plantCategory);
+        $subCategoryId = null;
 
-        $category_id = null;
-
-        if ($plant_sub_category !== '') {
-            $get_sub_category_id_query = "SELECT id FROM products_sub_categories_tb WHERE name = :sub_category";
-            $statement = $this->pdo->prepare($get_sub_category_id_query);
-            $statement->bindValue(':sub_category', $plant_sub_category, PDO::PARAM_STR);
-
-            try {
-                $statement->execute();
-                $sub_category_id = $statement->fetchColumn();
-            } catch (PDOException $e) {
-                ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            }
+        if ($plantSubCategory !== '') {
+            $subCategoryId = $this->sub_categories_model->getCategoriesColumnBy('id', 'name', $plantSubCategory);
         }
 
-        if (!$sub_category_id) {
-            $sub_category_id = null;
+        if (!$subCategoryId) {
+            $subCategoryId = null;
         }
 
-        if ($category_id === null) {
-            return [];
+        if ($categoryID === null) {
+            ResponseHelper::sendErrorResponse("No category found", 400);
         }
 
-        $add_new_plant_query = "INSERT INTO products_tb (categoryId, subCategoryId, plant_name, plant_description, size, plant_image, plant_price, stock) VALUES (:category_id, :sub_category_id, :plant_name, :plant_description, :size, :plant_image, :plant_price, :stock)";
-        $add_new_plant_query = $this->pdo->prepare($add_new_plant_query);
-        $add_new_plant_query->bindValue(':category_id', $category_id, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':sub_category_id', $sub_category_id, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':plant_name', $plant_name, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':plant_description', $product_description, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':size', $pot_size, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':plant_image', $product_photo_url, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':plant_price', $plant_price, PDO::PARAM_STR);
-        $add_new_plant_query->bindValue(':stock', $stock, PDO::PARAM_STR);
+        $query = "INSERT INTO products_tb (categoryId, subCategoryId, plant_name, plant_description, size, plant_image, plant_price, stock) VALUES (:category_id, :sub_category_id, :plant_name, :plant_description, :size, :plant_image, :plant_price, :stock)";
+        $statement = $this->pdo->prepare($query);
+
+        $bindParams = [
+            ':category_id' => $categoryID,
+            ':sub_category_id' => $subCategoryId,
+            ':plant_name' => $plantName,
+            ':plant_description' => $productDescription,
+            ':size' => $potSize,
+            ':plant_image' => $productPhotoURL,
+            ':plant_price' => $plantPrice,
+            ':stock' => $stock
+        ];
+
+        foreach ($bindParams as $value => $key) {
+            $statement->bindValue($value, $key, PDO::PARAM_STR);
+        }
 
         try {
-            $add_new_plant_query->execute();
+            $statement->execute();
 
-            return $add_new_plant_query->rowCount() > 0;
+            return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
@@ -182,37 +184,39 @@ class PlantModel
      * @throws PDOException If there is an error executing the query.
      * @return bool Returns true if the plant was successfully edited, false otherwise.
      */
-    public function editPlant($id, $data)
+    public function editPlant($productID, $payload)
     {
 
-        if (!is_array($data) || empty($data) || !is_string($id)) {
-            return [];
+        if (!is_array($payload) || empty($payload) || !$productID) {
+            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
         }
 
-        $plant_photo_url = $data['product_photo_url'];
-        $plant_name = $data['product_name'];
-        $plant_category = $data['product_category'];
-        $plant_sub_category = $data['product_sub_category'] ?? '';
-        $plant_price = $data['product_price'];
-        $pot_size = $data['pot_size'] ?? '';
-        $product_description = $data['product_description'];
+        $productID = (int) $productID;
 
-        $category_id = $this->categories_model->getCategoryByName($plant_category);
-        $category_id = $category_id[0]['id'];
+        $plantPhotoURL = $payload['product_photo_url'];
+        $plantName = $payload['product_name'];
+        $plantCategory = $payload['product_category'];
+        $plantSubCategory = $payload['product_sub_category'] ?? '';
+        $plantPrice = $payload['product_price'];
+        $size = $payload['pot_size'] ?? '';
+        $productDescription = $payload['product_description'];
 
-        $sub_category_id = $this->sub_categories_model->getSubCategoryByName($plant_sub_category);
-        $sub_category_id = $sub_category_id[0]['id'];
+        $categoryID = $this->categories_model->getCategoryByName($plantCategory);
+        $categoryID = $categoryID[0]['id'];
 
-        $update_plant_query = "UPDATE products_tb SET categoryId = :category_id, subCategoryId = :sub_category_id, plant_name = :plant_name, plant_description = :plant_description, size = :size, plant_image = :plant_image, plant_price = :plant_price WHERE id = :id";
+        $subCategoryID = $this->sub_categories_model->getSubCategoryByName($plantSubCategory);
+        $subCategoryID = $subCategoryID[0]['id'];
+
+        $update_plant_query = "UPDATE products_tb SET categoryId = :categoryID, subCategoryId = :subCategoryID, plantName = :plantName, plant_description = :productDescription, size = :size, plant_image = :plantImage, plantPrice = :plantPrice WHERE id = :id";
         $update_plant_query = $this->pdo->prepare($update_plant_query);
-        $update_plant_query->bindValue(':category_id', $category_id, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':sub_category_id', $sub_category_id, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':plant_name', $plant_name, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':plant_description', $product_description, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':size', $pot_size, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':plant_image', $plant_photo_url, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':plant_price', $plant_price, PDO::PARAM_STR);
-        $update_plant_query->bindValue(':id', $id, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':categoryID', $categoryID, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':subCategoryID', $subCategoryID, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':plantName', $plantName, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':productDescription', $productDescription, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':size', $size, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':plantImage', $plantPhotoURL, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':plantPrice', $plantPrice, PDO::PARAM_STR);
+        $update_plant_query->bindValue(':id', $productID, PDO::PARAM_STR);
 
         try {
             $update_plant_query->execute();
@@ -230,15 +234,17 @@ class PlantModel
      * @return bool Returns true if the plant was successfully deleted, false otherwise.
      * @throws PDOException If there is an error executing the query.
      */
-    public function deletePlant($id)
+    public function deletePlant($productID)
     {
-        if (!is_string($id)) {
-            return [];
+        if (!$productID) {
+            ResponseHelper::sendErrorResponse("Invalid or missing product ID parameter", 400);
         }
+
+        $productID = (int) $productID;
 
         $delete_query = "DELETE FROM products_tb WHERE id = :id";
         $delete_query = $this->pdo->prepare($delete_query);
-        $delete_query->bindValue(':id', $id, PDO::PARAM_STR);
+        $delete_query->bindValue(':id', $productID, PDO::PARAM_STR);
 
         try {
             $delete_query->execute();

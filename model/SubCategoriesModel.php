@@ -97,22 +97,57 @@ class SubCategoriesModel
         }
     }
 
-    public function getSubCategoryNameById($sub_category_id)
+    public function getCategoriesColumnBy($column, $condition_column, $condition_value)
     {
-        if (!is_integer($sub_category_id)) {
+        if (!is_string($column) || !is_string($condition_column) || !is_string($condition_value)) {
             return [];
         }
 
-        $query = "SELECT name FROM products_sub_categories_tb WHERE id = :sub_category_id";
+        $condition = null;
+
+        foreach ($this->column_names as $column_name) {
+            if ($column_name === $column) {
+                $condition = "$condition_column = :value";
+                break;
+            }
+        }
+
+        $query = "SELECT $column FROM products_categories_tb WHERE $condition";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':sub_category_id', $sub_category_id, PDO::PARAM_STR);
+        $statement->bindValue(':value', $condition_value, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->fetchColumn();
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            exit;
+        }
+    }
+
+    public function getSubCategoriesColumnBy($column, $condition_column, $condition_value)
+    {
+        if (!is_string($column) || !is_string($condition_column) || !is_string($condition_value)) {
+            return [];
+        }
+
+        $condition = null;
+
+        foreach ($this->column_names as $column_name) {
+            if ($column_name === $column) {
+                $condition = "$condition_column = :value";
+                break;
+            }
+        }
+
+        $query = "SELECT $column FROM products_sub_categories_tb WHERE $condition";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':value', $condition_value, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 }

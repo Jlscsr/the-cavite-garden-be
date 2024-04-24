@@ -52,7 +52,7 @@ class PlantController
      * @throws ResponseHelperException If the parameter type is invalid or if no plant is found by the given ID.
      * @return void
      */
-    public function getPlantById($params)
+    public function getProductByID($params)
     {
 
         $plant_id = $params['id'];
@@ -62,7 +62,7 @@ class PlantController
             return;
         }
 
-        $plants = $this->plant_model->getPlantById($plant_id);
+        $plants = $this->plant_model->getProductByID($plant_id);
         $plant_category = $this->categories_model->getCategoryById($plants['categoryId']);
         $plant_sub_category = $this->sub_categories_model->getSubCategoryById($plants['subCategoryId']);
         $plants['category_name'] = $plant_category[0]['name'];
@@ -84,7 +84,7 @@ class PlantController
      * @throws ResponseHelperException If the parameter type is invalid or if no plants are found for the given category.
      * @return void
      */
-    public function getAllPlantsByCategory($params)
+    public function getAllProductsByCategory($params)
     {
         // print the variable type of type_id
         $category_id = $params['id'];
@@ -94,7 +94,7 @@ class PlantController
             return;
         }
 
-        $plants = $this->plant_model->getAllPlantsByCategory($category_id);
+        $plants = $this->plant_model->getAllProductsByCategory($category_id);
 
         $plants = $this->addCategoryAndSubCategoryNamesToPlants($plants);
 
@@ -115,7 +115,7 @@ class PlantController
      * @throws ResponseHelperException If the plant could not be added.
      * @return void
      */
-    public function addNewPlant($data)
+    public function addNewProduct($data)
     {
         if (!is_array($data) && empty($data)) {
             ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
@@ -123,7 +123,7 @@ class PlantController
         }
 
 
-        $response = $this->plant_model->addNewPlant($data);
+        $response = $this->plant_model->addNewProduct($data);
 
         if (empty($response)) {
             ResponseHelper::sendErrorResponse("Failed to add new plant", 500);

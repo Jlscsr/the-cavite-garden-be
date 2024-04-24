@@ -40,7 +40,7 @@ class CartModel
             }
 
             foreach ($product_ids as $product_id) {
-                $product = $this->plant_model->getPlantById($product_id);
+                $product = $this->plant_model->getProductByID($product_id);
                 $products_lists[] = $product;
             }
 

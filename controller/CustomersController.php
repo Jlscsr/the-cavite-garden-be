@@ -5,7 +5,7 @@ use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
 use Helpers\CookieManager;
 
-require_once dirname(__DIR__) . '/model/CustomersModel.php';
+use Models\CustomersModel;
 
 class CustomersController
 {
