@@ -11,7 +11,7 @@ class CategoriesController
 
     public function __construct($pdo)
     {
-        $this->categories_model = new CategoriesModel($pdo);
+        $this->$this->categories_model = new CategoriesModel($pdo);
     }
 
     /**

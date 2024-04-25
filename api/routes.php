@@ -87,36 +87,36 @@ class Route
                 "handler" => "CategoriesController@deleteCategory",
                 "middleware" => false
             ],
-            "api/plant/category/:id" => [
-                "handler" => "PlantController@getAllProductsByCategory",
+            "api/product/category/:id" => [
+                "handler" => "ProductsController@getAllProductsByCategory",
                 "middleware" => false
             ],
-            "api/plant/delete/:id" => [
-                "handler" => "PlantController@deletePlant",
+            "api/product/delete/:id" => [
+                "handler" => "ProductsController@deleteProduct",
                 "middleware" => false
             ],
-            "api/plant/edit/:id" => [
-                "handler" => "PlantController@editPlant",
+            "api/product/edit/:id" => [
+                "handler" => "ProductsController@editProduct",
                 "middleware" => false
             ],
             "api/category/add" => [
                 "handler" => "CategoriesController@addNewCategory",
                 "middleware" => false,
             ],
-            "api/plant/add" => [
-                "handler" => "PlantController@addNewProduct",
+            "api/product/add" => [
+                "handler" => "ProductsController@addNewProduct",
                 "middleware" => false
             ],
-            "api/plant/:id" => [
-                "handler" => "PlantController@getProductByID",
+            "api/product/:id" => [
+                "handler" => "ProductsController@getProductByID",
                 "middleware" => false,
             ],
             "api/categories" => [
                 "handler" => "CategoriesController@getAllPlantCategories",
                 "middleware" => false,
             ],
-            "api/plant" => [
-                "handler" => "PlantController@getAllPlants",
+            "api/products" => [
+                "handler" => "ProductsController@getAllProducts",
                 "middleware" => false
             ],
         ];

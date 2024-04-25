@@ -3,26 +3,33 @@
 namespace Models;
 
 use Helpers\ResponseHelper;
+
 use Models\SubCategoriesModel;
 
 use PDO;
 use PDOException;
 
+use RuntimeException;
+use InvalidArgumentException;
+
 class CategoriesModel
 {
     private $pdo;
-    private $sub_categories_model;
+    private $subCategoriesModel;
+
+    private const PRODUCTS_CATEGORIES_TABLE = 'products_categories_tb';
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
-        $this->sub_categories_model = new SubCategoriesModel($pdo);
+        $this->subCategoriesModel = new SubCategoriesModel($pdo);
         $this->column_names = ['id', 'name', 'description'];
     }
 
     public function getAllPlantCategories()
     {
-        $query = "SELECT * FROM products_categories_tb";
+        $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE;
+
         $statement = $this->pdo->prepare($query);
 
         try {
@@ -31,33 +38,35 @@ class CategoriesModel
 
 
             foreach ($categories as $key => $category) {
-                $sub_category = $this->sub_categories_model->getSubCategoryByCategoryId($category['id']);
+                $categoryID = (int) $category['id'];
+                $subCategory = $this->subCategoriesModel->getSubCategoryByCategoryId($categoryID);
 
-                if (!empty($sub_category)) {
+                if (!empty($subCategory)) {
                     if (!isset($categories[$key]['sub_categories'])) {
                         $categories[$key]['sub_categories'] = [];
                     }
 
                     // Append the sub categories
-                    foreach ($sub_category as $sub_category_item) {
-                        $categories[$key]['sub_categories'][] = $sub_category_item;
+                    foreach ($subCategory as $item) {
+                        $categories[$key]['sub_categories'][] = $item;
                     }
                 }
             }
 
             return $categories;
         } catch (PDOException $e) {
-            return [];
+            throw new RuntimeException($e->getMessage());
         }
     }
 
     public function getCategoryById($id)
     {
-        if (!is_integer($id)) {
-            return [];
+        if (!$id) {
+            throw new InvalidArgumentException('Invalid category ID');
         }
 
-        $query = "SELECT * FROM products_categories_tb WHERE id = :id";
+        $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
+
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':id', $id, PDO::PARAM_STR);
 
@@ -65,17 +74,18 @@ class CategoriesModel
             $statement->execute();
             return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return [];
+            throw new RuntimeException($e->getMessage());
         }
     }
 
     public function getCategoryByName($name)
     {
-        if (!is_string($name)) {
-            return [];
+        if (!is_string($name) && empty($name)) {
+            throw new InvalidArgumentException('Invalid category name');
         }
 
-        $query = "SELECT * FROM products_categories_tb WHERE name = :name";
+        $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE name = :name";
+
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':name', $name, PDO::PARAM_STR);
 
@@ -83,83 +93,85 @@ class CategoriesModel
             $statement->execute();
             return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return [];
+            throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function addNewCategory($data)
+    public function addNewCategory($payload)
     {
-        if (!is_array($data) && empty($data)) {
-            return [];
+        if (!is_array($payload) && empty($payload)) {
+            throw new InvalidArgumentException('Invalid category payload or empty payload');
         }
 
-        $category_name = $data['category_name'];
-        $category_description = $data['category_description'];
+        $categoryName = $payload['category_name'];
+        $categoryDescription = $payload['category_description'];
 
-        $query = "INSERT INTO products_categories_tb (name, description) VALUES (:category_name, :category_description)";
-        $query = $this->pdo->prepare($query);
-        $query->bindValue(':category_name', $category_name, PDO::PARAM_STR);
-        $query->bindValue(':category_description', $category_description, PDO::PARAM_STR);
+        $query = "INSERT INTO " . self::PRODUCTS_CATEGORIES_TABLE . " (name, description) VALUES (:categoryName, :categoryDescription)";
+
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
+        $statement->bindValue(':categoryDescription', $categoryDescription, PDO::PARAM_STR);
 
         try {
-            $query->execute();
-            return $query->rowCount() > 0;
+            $statement->execute();
+            return $statement->rowCount() > 0;
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            throw new RuntimeException($e->getMessage());
         }
     }
 
     public function editCategory($id, $data)
     {
-        if (!is_array($data) || empty($data) || !is_string($id)) {
-            return [];
+        if (!is_array($data) || empty($data) || !$id) {
+            throw new InvalidArgumentException('Invalid category data or empty data');
         }
 
-        $category_name = $data['category_name'];
-        $category_description = $data['category_description'];
+        $categoryName = $data['category_name'];
+        $categoryDescription = $data['category_description'];
 
-        $update_category_query = "UPDATE products_categories_tb SET name = :category_name, description = :category_description WHERE id = :id";
-        $update_category_query = $this->pdo->prepare($update_category_query);
-        $update_category_query->bindValue(':category_name', $category_name, PDO::PARAM_STR);
-        $update_category_query->bindValue(':category_description', $category_description, PDO::PARAM_STR);
-        $update_category_query->bindValue(':id', $id, PDO::PARAM_STR);
+        $query = "UPDATE " . self::PRODUCTS_CATEGORIES_TABLE . " SET name = :categoryName, description = :categoryDescription WHERE id = :id";
+
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
+        $statement->bindValue(':categoryDescription', $categoryDescription, PDO::PARAM_STR);
+        $statement->bindValue(':id', $id, PDO::PARAM_STR);
 
         try {
-            $update_category_query->execute();
-            return $update_category_query->rowCount() > 0;
+            $statement->execute();
+            return $statement->rowCount() > 0;
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            throw new RuntimeException($e->getMessage());
         }
     }
 
     public function deleteCategory($id)
     {
-        if (!is_string($id)) {
-            return [];
+        if (!$id) {
+            throw new InvalidArgumentException('Invalid category ID');
         }
 
-        $delete_all_plants_query = "DELETE FROM products_tb WHERE categoryId = :id";
-        $delete_all_plants_query = $this->pdo->prepare($delete_all_plants_query);
-        $delete_all_plants_query->bindValue(':id', $id, PDO::PARAM_STR);
+        $query = "DELETE FROM products_tb WHERE categoryId = :id";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':id', $id, PDO::PARAM_STR);
 
         try {
-            $delete_all_plants_query->execute();
+            $statement->execute();
 
-            $delete_query = "DELETE FROM products_categories_tb WHERE id = :id";
-            $delete_query = $this->pdo->prepare($delete_query);
-            $delete_query->bindValue(':id', $id, PDO::PARAM_STR);
+            $query = "DELETE FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':id', $id, PDO::PARAM_STR);
 
-            $delete_query->execute();
-            return $delete_query->rowCount() > 0;
+            $statement->execute();
+            return $statement->rowCount() > 0;
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            throw new RuntimeException($e->getMessage());
         }
     }
 
     public function getCategoriesColumnBy($column, $condition_column, $condition_value)
     {
         if (!is_string($column) || !is_string($condition_column) || !is_string($condition_value)) {
-            return [];
+            throw new InvalidArgumentException('Invalid column name or condition column name or condition value');
         }
 
         $condition = null;
@@ -171,7 +183,8 @@ class CategoriesModel
             }
         }
 
-        $query = "SELECT $column FROM products_categories_tb WHERE $condition";
+        $query = "SELECT $column FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE $condition";
+
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':value', $condition_value, PDO::PARAM_STR);
 
