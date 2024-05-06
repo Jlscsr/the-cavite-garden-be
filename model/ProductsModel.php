@@ -166,17 +166,17 @@ class ProductsModel
             return;
         }
 
-        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (categoryId, subCategoryId, plant_name, plant_description, size, plant_image, plant_price, stock) VALUES (:category_id, :sub_category_id, :plant_name, :plant_description, :size, :plant_image, :plant_price, :stock)";
+        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (categoryId, subCategoryId, product_name, product_description, size, product_image, product_price, stock) VALUES (:category_id, :sub_category_id, :product_name, :product_description, :size, :product_image, :product_price, :stock)";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
-            ':category_id' => $categoryID,
+            ':category_id' => $categoryID['id'],
             ':sub_category_id' => $subCategoryId,
-            ':plant_name' => $productName,
-            ':plant_description' => $productDescription,
+            ':product_name' => $productName,
+            ':product_description' => $productDescription,
             ':size' => $productSize,
-            ':plant_image' => $productPhotoURL,
-            ':plant_price' => $productPrice,
+            ':product_image' => $productPhotoURL,
+            ':product_price' => $productPrice,
             ':stock' => $stock
         ];
 
@@ -215,6 +215,7 @@ class ProductsModel
         $productCategory = $payload['product_category'];
         $productSubCategory = $payload['product_sub_category'] ?? '';
         $productPrice = $payload['product_price'];
+        $stock = $payload['stock'];
         $size = $payload['pot_size'] ?? '';
         $productDescription = $payload['product_description'];
 
@@ -224,7 +225,7 @@ class ProductsModel
         $subCategoryID = $this->subCategoriesModel->getSubCategoryByName($productSubCategory);
         $subCategoryID = $subCategoryID[0]['id'];
 
-        $query = "UPDATE " . self::PRODUCTS_TABLE . " SET categoryId = :categoryID, subCategoryId = :subCategoryID, product_name = :productName, product_description = :productDescription, size = :size, product_image = :productImage, product_price = :productPrice WHERE id = :id";
+        $query = "UPDATE " . self::PRODUCTS_TABLE . " SET categoryId = :categoryID, subCategoryId = :subCategoryID, product_name = :productName, product_description = :productDescription, size = :size, product_image = :productImage, product_price = :productPrice, stock = :stock WHERE id = :id";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
@@ -234,8 +235,9 @@ class ProductsModel
             ':productName' => $productName,
             ':productDescription' => $productDescription,
             ':size' => $size,
-            ':plantImage' => $productPhotoURL,
+            ':productImage' => $productPhotoURL,
             ':productPrice' => $productPrice,
+            ':stock' => $stock
         ];
 
         foreach ($bindParams as $key => $value) {

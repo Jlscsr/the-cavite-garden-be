@@ -1,9 +1,12 @@
 <?php
 
+namespace Models;
+
 use Helpers\ResponseHelper;
 
-require_once dirname(__DIR__) . '/model/PlantModel.php';
+use Models\ProductsModel;
 
+use PDO;
 
 class TransactionModel
 {
@@ -13,7 +16,7 @@ class TransactionModel
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
-        $this->plant_model = new PlantModel($pdo);
+        $this->products_model = new ProductsModel($pdo);
     }
 
     public function getAllTransactions($status)
@@ -77,7 +80,7 @@ class TransactionModel
 
                             foreach ($product_transaction as $key => $value) {
                                 $product_id = $value['product_id'];
-                                $response = $this->plant_model->getProductByID($product_id);
+                                $response = $this->products_model->getProductByID($product_id);
 
                                 if (!$response) {
                                     ResponseHelper::sendErrorResponse("Product not found", 404);
@@ -165,7 +168,7 @@ class TransactionModel
                         $statement = $this->pdo->prepare($query);
                         $statement->bindValue(':transaction_id', $transaction_id, PDO::PARAM_STR);
                         $statement->bindValue(':product_id', $value['product_info']['id'], PDO::PARAM_STR);
-                        $statement->bindValue(':price', $value['product_info']['plant_price'], PDO::PARAM_STR);
+                        $statement->bindValue(':price', $value['product_info']['product_price'], PDO::PARAM_STR);
                         $statement->bindValue(':quantity', $value['quantity'], PDO::PARAM_STR);
 
                         try {

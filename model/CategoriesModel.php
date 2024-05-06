@@ -157,6 +157,13 @@ class CategoriesModel
         try {
             $statement->execute();
 
+            $query = "DELETE FROM products_sub_categories_tb WHERE category_id = :id";
+
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':id', $id, PDO::PARAM_STR);
+
+            $statement->execute();
+
             $query = "DELETE FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
             $statement = $this->pdo->prepare($query);
             $statement->bindValue(':id', $id, PDO::PARAM_STR);
@@ -170,7 +177,7 @@ class CategoriesModel
 
     public function getCategoriesColumnBy($column, $condition_column, $condition_value)
     {
-        if (!is_string($column) || !is_string($condition_column) || !is_string($condition_value)) {
+        if (!is_string($column) || !is_string($condition_column) || !$condition_value) {
             throw new InvalidArgumentException('Invalid column name or condition column name or condition value');
         }
 
@@ -190,7 +197,7 @@ class CategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }

@@ -12,6 +12,8 @@ class SubCategoriesModel
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+
+        $this->column_names = ['id', 'name', 'description'];
     }
 
     public function getAllSubCategories()
@@ -118,7 +120,7 @@ class SubCategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }

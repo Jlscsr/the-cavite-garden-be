@@ -5,8 +5,9 @@ use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
 use Helpers\CookieManager;
 
+use Models\CustomersModel;
+
 require_once dirname(__DIR__) . '/config/load_env.php';
-require_once dirname(__DIR__) . '/model/CustomersModel.php';
 
 class AuthenticationController
 {
@@ -19,6 +20,8 @@ class AuthenticationController
         $this->jwt = new JWTHelper();
         $this->customer_model = new CustomersModel($pdo);
         $this->cookie_manager = new CookieManager($this->jwt);
+
+        HeaderHelper::setResponseHeaders();
     }
 
     public function register($payload)
@@ -28,8 +31,6 @@ class AuthenticationController
             ResponseHelper::sendErrorResponse("Invalid payload or payload is empty");
             return;
         }
-
-        HeaderHelper::setResponseHeaders();
 
         $password = $payload['password'];
         $hashed_password = password_hash($password, PASSWORD_BCRYPT, ['cost' => 15]);
@@ -56,8 +57,6 @@ class AuthenticationController
             ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
             return;
         }
-
-        HeaderHelper::setResponseHeaders();
 
         $email = $payload['email'];
         $password = $payload['password'];

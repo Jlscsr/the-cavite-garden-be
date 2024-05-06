@@ -7,11 +7,13 @@ use Models\CategoriesModel;
 
 class CategoriesController
 {
+    private $pdo;
     private $categories_model;
 
     public function __construct($pdo)
     {
-        $this->$this->categories_model = new CategoriesModel($pdo);
+        $this->pdo = $pdo;
+        $this->categories_model = new CategoriesModel($this->pdo);
     }
 
     /**

@@ -6,6 +6,8 @@ use Helpers\ResponseHelper;
 use Models\EmployeesModel;
 use Models\HelperModel;
 
+use PDO;
+
 class CustomersModel
 {
     private $pdo;
@@ -14,7 +16,7 @@ class CustomersModel
 
     // Constants
     private const CUSTOMERS_TABLE = 'customers_tb';
-    private const CUSTOMER_ADDRESS_TABLE = 'customer_address_tb';
+    private const CUSTOMER_ADDRESS_TABLE = 'customers_shipping_address_tb';
 
     public function __construct($pdo)
     {

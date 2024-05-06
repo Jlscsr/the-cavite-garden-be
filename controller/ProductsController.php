@@ -26,7 +26,6 @@ class ProductsController
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
         $this->productsModel = new ProductsModel($pdo);
 
-
         HeaderHelper::setResponseHeaders();
     }
 
@@ -123,11 +122,11 @@ class ProductsController
             $products = $this->productsModel->getAllProductsByCategory($categoryID);
 
             if (empty($products)) {
-                ResponseHelper::sendErrorResponse("No Products found base on the Category", 200);
+                ResponseHelper::sendErrorResponse("No Products found base on the Category");
                 return;
             }
 
-            $products = $this->addCategoryAndSubCategoryNamesToPlants($products);
+            $products = $this->addCategoryAndSubCategoryNamesToProducts($products);
 
             ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
         } catch (RuntimeException $e) {

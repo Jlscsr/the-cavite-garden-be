@@ -4,7 +4,9 @@ namespace Models;
 
 use Helpers\ResponseHelper;
 
-require_once dirname(__DIR__) . '/model/PlantModel.php';
+use Models\ProductsModel;
+
+use PDO;
 
 class CartModel
 {
@@ -14,12 +16,11 @@ class CartModel
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
-        $this->plant_model = new PlantModel($pdo);
+        $this->products_model = new ProductsModel($pdo);
     }
 
     public function getCostumerCartProducts($costumer_id)
     {
-
         if (!is_integer($costumer_id) || empty($costumer_id)) {
             ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
             return;
@@ -40,7 +41,7 @@ class CartModel
             }
 
             foreach ($product_ids as $product_id) {
-                $product = $this->plant_model->getProductByID($product_id);
+                $product = $this->products_model->getProductByID($product_id);
                 $products_lists[] = $product;
             }
 
