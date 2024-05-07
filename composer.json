@@ -8,7 +8,9 @@
             "Helpers\\": "./helpers",
             "Models\\": "./models",
             "Builders\\": "./builders",
-            "Validators\\": "./validators"
+            "Interfaces\\": "./interfaces",
+            "Validators\\": "./validators",
+            "Middlewares\\": "./middlewares"
         }
     }
 }

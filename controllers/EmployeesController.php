@@ -19,29 +19,14 @@ class EmployeesController
     {
         $this->pdo = $pdo;
         $this->jwt = new JWTHelper();
-        $this->cookie_manager = new CookieManager($this->jwt);
-        $this->employees_model = new EmployeesModel($pdo);
+        $this->cookie_manager = new CookieManager();
+        $this->employees_model = new EmployeesModel($this->pdo);
+
+        HeaderHelper::setResponseHeaders();
     }
 
     public function getAllEmployees()
     {
-        $this->cookie_manager->validateCookiePressence();
-
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
-
-        $decoded_token = $this->jwt->decodeJWTData($token);
-
-        if ($decoded_token->role !== 'admin') {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
-
         $lists_of_employees = $this->employees_model->getAllEmployees();
 
         if (empty($lists_of_employees)) {
@@ -54,19 +39,8 @@ class EmployeesController
 
     public function getEmployeeById()
     {
-        HeaderHelper::setResponseHeaders();
 
-        $headers = getallheaders();
-
-        if (!isset($headers['Cookie'])) {
-            $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthorizedResponse('Missing Token');
-            return;
-        }
-
-        $token = $headers['Cookie'];
-        $token = str_replace("tcg_access_token=", "", $token);
-
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
         $customer_id = $this->jwt->decodeJWTData($token)->id;
 
         $response = $this->employees_model->getEmployeeById($customer_id);
@@ -84,23 +58,6 @@ class EmployeesController
 
         if (!is_array($payload) || empty($payload)) {
             ResponseHelper::sendErrorResponse("Invalid payload or payload is empty");
-            return;
-        }
-
-        $this->cookie_manager->validateCookiePressence();
-
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
-
-        $decoded_token = $this->jwt->decodeJWTData($token);
-
-        if ($decoded_token->role !== 'admin') {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
             return;
         }
 
@@ -124,23 +81,6 @@ class EmployeesController
 
         if (!is_array($payload) || empty($payload) || !is_array($param) || empty($param) || !isset($param['id'])) {
             ResponseHelper::sendErrorResponse("Invalid payload and paramter or payload and parameter is empty");
-            return;
-        }
-
-        $this->cookie_manager->validateCookiePressence();
-
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
-
-        $decoded_token = $this->jwt->decodeJWTData($token);
-
-        if ($decoded_token->role !== 'admin') {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
             return;
         }
 

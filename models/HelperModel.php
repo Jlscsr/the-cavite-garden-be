@@ -3,8 +3,8 @@
 namespace Models;
 
 use Helpers\ResponseHelper;
-use PDO;
 
+use PDO;
 
 class HelperModel
 {

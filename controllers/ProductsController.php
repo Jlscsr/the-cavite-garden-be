@@ -1,6 +1,5 @@
 <?php
 
-
 use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
 
@@ -30,20 +29,8 @@ class ProductsController
         HeaderHelper::setResponseHeaders();
     }
 
-
-    /**
-     * Retrieves all products from the database.
-     *
-     * This function queries the database to retrieve all products and returns them as an array.
-     * If no products are found, it sends a 404 error response.
-     * If there is an error during the database operation, it sends a 500 error response.
-     *
-     * @return void
-     * @throws RuntimeException if there is an error during the database operation
-     */
     public function getAllProducts()
     {
-
         try {
             $products = $this->productsModel->getAllProducts();
 

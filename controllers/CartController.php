@@ -19,7 +19,7 @@ class CartController
     {
         $this->jwt = new JWTHelper();
         $this->cart_model = new CartModel($pdo);
-        $this->cookie_manager = new CookieManager($this->jwt);
+        $this->cookie_manager = new CookieManager();
 
         HeaderHelper::setResponseHeaders();
     }
@@ -31,15 +31,7 @@ class CartController
             return;
         }
 
-        $this->cookie_manager->validateCookiePressence();
-
         $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
 
         $decoded_token = $this->jwt->decodeJWTData($token);
         $data['customer_id'] = $decoded_token->id;
@@ -57,16 +49,7 @@ class CartController
     public function getCostumerCartProducts()
     {
 
-
-        $this->cookie_manager->validateCookiePressence();
-
         $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
 
         $decoded_token = $this->jwt->decodeJWTData($token);
         $customer_id = $decoded_token->id;
@@ -88,15 +71,7 @@ class CartController
             return;
         }
 
-        $this->cookie_manager->validateCookiePressence();
-
         $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
 
         $decoded_token = $this->jwt->decodeJWTData($token);
         $customer_id = $decoded_token->id;

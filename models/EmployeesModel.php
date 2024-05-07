@@ -1,12 +1,12 @@
 <?php
 
-
 namespace Models;
+
+use Helpers\ResponseHelper;
 
 use PDO;
 use PDOException;
 
-use Helpers\ResponseHelper;
 use Models\HelperModel;
 
 class EmployeesModel

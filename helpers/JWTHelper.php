@@ -6,6 +6,8 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 use Helpers\ResponseHelper;
+use RuntimeException;
+use UnexpectedValueException;
 
 require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
 require_once dirname(__DIR__) . '/vendor/autoload.php';
@@ -65,8 +67,9 @@ class JWTHelper
 
             return true;
         } catch (\Firebase\JWT\SignatureInvalidException $e) {
-            ResponseHelper::sendUnauthorizedResponse('Invalid Token Signature');
-            exit;
+            throw new RuntimeException('Invalid Token Signature');
+        } catch (UnexpectedValueException $e) {
+            throw new RuntimeException($e->getMessage());
         }
     }
 }

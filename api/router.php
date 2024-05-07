@@ -1,10 +1,12 @@
 <?php
 
+require_once dirname(__DIR__) . '/config/DBConnect.php';
+require_once dirname(__DIR__) . '/api/routes.php';
+
 use Helpers\HeaderHelper;
 use Helpers\ResponseHelper;
 
-require_once dirname(__DIR__) . '/config/DBConnect.php';
-require_once dirname(__DIR__) . '/api/routes.php';
+use Middlewares\BaseMiddleware;
 
 // This code sets the necessary headers for the response.
 HeaderHelper::SendPreflighthHeaders();
@@ -19,23 +21,16 @@ $request_method = strtoupper(trim($_SERVER['REQUEST_METHOD']));
 
 $handler = $route->get_route($url);
 
-$middleware_required = isset($handler['middleware']) && is_array($handler['middleware']) && $handler['middleware']['required'];
+$isMiddlewareRequired = isset($handler['middleware']) && !empty($handler['middleware']) && $handler['middleware'];
 
-if ($middleware_required) {
-    $middleware = $handler['middleware']['handler'];
-
+if ($isMiddlewareRequired) {
     try {
-        require_once dirname(__DIR__) . '/middlewares' . '/' . $middleware . '.php';
+        $middleware = new BaseMiddleware($handler['requiredRole']);
 
-        $is_valid = new $middleware();
-
-        if (!$is_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Invalid Token or User is not authorized');
-            return;
-        }
-    } catch (Exception $e) {
-        ResponseHelper::sendErrorResponse($e->getMessage());
-        return;
+        $middleware->validateRequest();
+    } catch (RuntimeException $e) {
+        ResponseHelper::sendErrorResponse($e->getMessage(), 401);
+        exit;
     }
 }
 
@@ -56,7 +51,7 @@ switch ($request_method) {
     case 'POST':
         $payload = json_decode(file_get_contents('php://input'), true);
 
-        if ($payload === null) {
+        if ($payload === null && $url !== 'api/auth/logout') {
             ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
             return;
         }

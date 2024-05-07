@@ -2,48 +2,46 @@
 
 namespace Helpers;
 
-use Helpers\ResponseHelper;
+use RuntimeException;
 
 class CookieManager
 {
-    private $jwt;
-    private $is_secure;
-    private $is_http_only;
-    private $cookie_name;
+    private $isSecure;
+    private $isHttpOnly;
+    private $cookieName;
 
-    public function __construct($jwt)
+    public function __construct()
     {
-        $this->jwt = $jwt;
-        $this->is_secure = true;
-        $this->is_http_only = true;
-        $this->cookie_name = 'tcg_access_token';
+        $this->isSecure = true;
+        $this->isHttpOnly = true;
+        $this->cookieName = 'tcg_access_token';
     }
 
     /**
      * Sets a cookie with the given token and expiry date.
      *
      * @param string $token The token to set in the cookie.
-     * @param int $expiry_date The expiry date of the cookie in Unix timestamp format.
+     * @param int $expiryDate The expiry date of the cookie in Unix timestamp format.
      * @return void
      */
-    public function setCookiHeader($token, $expiry_date)
+    public function setCookiHeader($token, $expiryDate)
     {
-        setcookie($this->cookie_name, $token, $expiry_date, '/', '', $this->is_secure, $this->is_http_only);
+        setcookie($this->cookieName, $token, $expiryDate, '/', '', $this->isSecure, $this->isHttpOnly);
     }
 
     /**
      * Resets the cookie header by deleting the cookie with the specified name.
      *
-     * This function sets the cookie with the name specified in the `$cookie_name` property to an empty value,
+     * This function sets the cookie with the name specified in the `$cookieName` property to an empty value,
      * with an expiry date set to one hour ago. The cookie is set to be accessible only on the current domain,
-     * and it is flagged as secure if the `$is_secure` property is set to true. The cookie is also flagged as HTTP-only
-     * if the `$is_http_only` property is set to true.
+     * and it is flagged as secure if the `$isSecure` property is set to true. The cookie is also flagged as HTTP-only
+     * if the `$isHttpOnly` property is set to true.
      *
      * @return void
      */
     public function resetCookieHeader()
     {
-        setcookie($this->cookie_name, '', time() - 3600, '/', '', $this->is_secure, $this->is_http_only);
+        setcookie($this->cookieName, '', time() - 3600, '/', '', $this->isSecure, $this->isHttpOnly);
     }
 
     /**
@@ -63,9 +61,15 @@ class CookieManager
         $this->validateCookiePressence();
 
         $token = $headers['Cookie'];
+
+        if (strpos($token, $this->cookieName) === false) {
+            $this->resetCookieHeader();
+            return ['status' => 'failed', 'message' => 'Access Token is Missing. Please Login Again'];
+        }
+
         $token = str_replace("tcg_access_token=", "", $token);
 
-        return $token;
+        return ['token' => $token];
     }
 
     /**
@@ -83,7 +87,7 @@ class CookieManager
         $headers = getallheaders();
 
         if (!isset($headers['Cookie'])) {
-            ResponseHelper::sendErrorResponse('Missing Cookie Header', 400);
+            return ['status' => 'failed', 'message' => 'Cookie header is missing'];
             exit;
         }
     }

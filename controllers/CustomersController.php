@@ -17,27 +17,13 @@ class CustomersController
     {
         $this->jwt = new JWTHelper();
         $this->customer_model = new CustomersModel($pdo);
-        $this->cookie_manager = new CookieManager($this->jwt);
+        $this->cookie_manager = new CookieManager();
+
+        HeaderHelper::setResponseHeaders();
     }
 
     public function getAllCustomers()
     {
-        $this->cookie_manager->validateCookiePressence();
-
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
-
-        $decoded_token = $this->jwt->decodeJWTData($token);
-
-        if ($decoded_token->role !== 'admin') {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
 
         $lists_of_customers = $this->customer_model->getAllCustomers();
 
@@ -52,18 +38,7 @@ class CustomersController
     public function getCustomerById()
     {
 
-        HeaderHelper::setResponseHeaders();
-
-        $this->cookie_manager->validateCookiePressence();
-
         $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-
-        $is_token_valid = $this->jwt->validateToken($token);
-
-        if (!$is_token_valid) {
-            ResponseHelper::sendUnauthorizedResponse('Unauthorized');
-            return;
-        }
 
         $decoded_token = $this->jwt->decodeJWTData($token);
         $customer_id = $decoded_token->id;
@@ -85,19 +60,7 @@ class CustomersController
             return;
         }
 
-        HeaderHelper::setResponseHeaders();
-
-        $headers = getallheaders();
-
-        if (!isset($headers['Cookie'])) {
-            $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthorizedResponse('Invalid Token');
-            return;
-        }
-
-        $token = $headers['Cookie'];
-        $token = str_replace("tcg_access_token=", "", $token);
-
+        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
         $customer_id = $this->jwt->decodeJWTData($token)->id;
 
         $response = $this->customer_model->addNewUserAddress($customer_id, $data);

@@ -4,7 +4,7 @@ use Helpers\JWTHelper;
 use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
 
-require_once dirname(__DIR__) . '/model/TransactionModel.php';
+use Models\TransactionModel;
 
 class TransactionController
 {

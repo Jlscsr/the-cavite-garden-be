@@ -1,139 +1,160 @@
 <?php
 
+require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
+
 use Helpers\JWTHelper;
 use Helpers\ResponseHelper;
 use Helpers\HeaderHelper;
 use Helpers\CookieManager;
 
-use Validators\Authentication\LoginValidator;
+use Validators\AuthenticationValidator;
 
 use Models\CustomersModel;
 use Models\EmployeesModel;
 
-require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
-
 class AuthenticationController
 {
     private $jwt;
-    private $customer_model;
-    private $cookie_manager;
-    private $employee_model;
+    private $customerModel;
+    private $cookieManager;
+    private $employeeModel;
 
     public function __construct($pdo)
     {
         $this->jwt = new JWTHelper();
-        $this->customer_model = new CustomersModel($pdo);
-        $this->cookie_manager = new CookieManager($this->jwt);
-        $this->employee_model = new EmployeesModel($pdo);
+        $this->customerModel = new CustomersModel($pdo);
+        $this->cookieManager = new CookieManager();
+        $this->employeeModel = new EmployeesModel($pdo);
 
         HeaderHelper::setResponseHeaders();
     }
 
+    /**
+     * Registers a new user.
+     *
+     * @param array $payload The payload containing user registration data.
+     *                      It should have the following keys:
+     *                      - firstName: string
+     *                      - lastName: string
+     *                      - birthdate: string
+     *                      - phoneNumber: string
+     *                      - password: string
+     *                      - email: string
+     * @throws RuntimeException If an error occurs during registration.
+     * @throws InvalidArgumentException If the payload is missing required fields.
+     * @return void
+     */
     public function register($payload)
     {
+        try {
+            AuthenticationValidator::validateRegisterPayload($payload);
 
-        if (!is_array($payload) || empty($payload)) {
-            ResponseHelper::sendErrorResponse("Invalid payload data type or payload is empty");
-            exit;
+            $payload['firstName'] = filter_var($payload['firstName'], FILTER_SANITIZE_SPECIAL_CHARS);
+            $payload['lastName'] = filter_var($payload['lastName'], FILTER_SANITIZE_SPECIAL_CHARS);
+            $payload['birthdate'] = filter_var($payload['birthdate'], FILTER_SANITIZE_SPECIAL_CHARS);
+            $payload['phoneNumber'] = filter_var($payload['phoneNumber'], FILTER_SANITIZE_NUMBER_INT);
+            $payload['password'] = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
+            $payload['email'] = filter_var($payload['email'], FILTER_SANITIZE_EMAIL);
+
+            $hashed_password = password_hash($payload['password'], PASSWORD_BCRYPT, ['cost' => 15]);
+            $payload['password'] = $hashed_password;
+
+            $response = $this->customerModel->addNewCustomer($payload);
+
+            if (is_string($response)) {
+                ResponseHelper::sendErrorResponse($response, 500);
+                return;
+            }
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to register new customer', 500);
+                return;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'User registered successfully', 201);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage());
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage());
         }
-
-        if (!isset($payload['email']) || !isset($payload['password'])) {
-            ResponseHelper::sendErrorResponse("Email or password is missing in the payload");
-            exit;
-        }
-
-        if (!filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
-            ResponseHelper::sendErrorResponse("Invalid email format");
-            exit;
-        }
-
-
-        $password = $payload['password'];
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT, ['cost' => 15]);
-        $payload['password'] = $hashed_password;
-
-        $response = $this->customer_model->addNewCustomer($payload);
-
-        if (is_string($response)) {
-            ResponseHelper::sendErrorResponse($response, 500);
-            return;
-        }
-
-        if (!$response) {
-            ResponseHelper::sendErrorResponse('Failed to register new customer', 500);
-            return;
-        }
-
-        ResponseHelper::sendSuccessResponse([], 'User registered successfully', 201);
     }
 
+    /**
+     * Performs user login authentication.
+     *
+     * @param mixed $payload The payload containing user login data.
+     * @throws RuntimeException If an error occurs during login.
+     * @return void
+     */
     public function login($payload)
     {
-        $validatorMessage = LoginValidator::validatePayload($payload);
+        try {
+            AuthenticationValidator::validateLoginPayload($payload);
 
-        if ($validatorMessage !== 'valid') {
-            ResponseHelper::sendErrorResponse($validatorMessage, 400);
-            return;
+            $email = filter_var($payload['email'], FILTER_SANITIZE_EMAIL);
+            $password = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
+
+            $userAccount = $this->customerModel->getAccountByEmail($email) ?: $this->employeeModel->getEmployeeByEmail($email);
+
+            if (!$userAccount || !password_verify($password, $userAccount['password'])) {
+                ResponseHelper::sendUnauthorizedResponse($userAccount ? 'Incorrect password' : 'Account not found');
+                return;
+            }
+
+            $expiryDate = time() + (5 * 3600);
+            $tokenData = [
+                "id" => $userAccount['id'],
+                'email' => $email,
+                'role' => $userAccount['role'],
+                'expiry_date' => $expiryDate
+            ];
+
+            $token = $this->jwt->encodeDataToJWT($tokenData);
+
+            $this->cookieManager->setCookiHeader($token, $expiryDate);
+
+            ResponseHelper::sendSuccessResponse(['role' => $userAccount['role']], 'Logged In success', 201);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage());
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage());
         }
-
-        $email = filter_var($payload['email'], FILTER_SANITIZE_EMAIL);
-        $password = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
-
-        $customerAccounts = $this->customer_model->getAccountByEmail($email);
-        $employeeAccounts = $this->employee_model->getEmployeeByEmail($email);
-
-        if (!$customerAccounts && !$employeeAccounts) {
-            ResponseHelper::sendUnauthorizedResponse('Account not found');
-            return;
-        }
-
-        $userAccount = $customerAccounts ? $customerAccounts : $employeeAccounts;
-
-        $stored_password = $userAccount['password'];
-
-        if (!password_verify($password, $stored_password)) {
-            ResponseHelper::sendUnauthorizedResponse('Incorrect Password');
-            return;
-        }
-
-        // 5hrs expiry time for token
-        $expiry_date = time() + (5 * 3600);
-
-        $to_be_tokenized = [
-            "id" => $userAccount['id'],
-            'email' => $userAccount['email'],
-            'password' => $userAccount['password'],
-            'role' => $userAccount['role'],
-            'expiry_date' => $expiry_date
-        ];
-
-        $token = $this->jwt->encodeDataToJWT($to_be_tokenized);
-
-        $this->cookie_manager->setCookiHeader($token, $expiry_date);
-
-        ResponseHelper::sendSuccessResponse(['role' => $userAccount['role']], 'Logged In success', 201);
     }
 
+    /**
+     * Logs out the user by resetting the cookie header and sending a success response.
+     *
+     * @return void
+     */
     public function logout()
     {
-        $this->cookie_manager->resetCookieHeader();
+        $this->cookieManager->resetCookieHeader();
         ResponseHelper::sendSuccessResponse([], 'Logout Succesfully', 200);
-        return;
+        exit;
     }
 
+    /**
+     * Checks if the token in the cookie header is valid.
+     *
+     * @throws RuntimeException if an error occurs while validating the token
+     * @return void
+     */
     public function checkToken()
     {
+        try {
+            $this->cookieManager->validateCookiePressence();
 
-        $this->cookie_manager->validateCookiePressence();
+            $token = $this->cookieManager->extractAccessTokenFromCookieHeader();
 
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+            if (!$this->jwt->validateToken($token)) {
+                $this->cookieManager->resetCookieHeader();
+                ResponseHelper::sendUnauthorizedResponse('Invalid token');
+                return;
+            }
 
-        if (!$this->jwt->validateToken($token)) {
-            $this->cookie_manager->resetCookieHeader();
-            ResponseHelper::sendUnauthorizedResponse('Invalid token');
-            return;
+            ResponseHelper::sendSuccessResponse([], 'Token is valid', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage());
         }
-
-        ResponseHelper::sendSuccessResponse(null, 'Token is valid', 200);
     }
 }
