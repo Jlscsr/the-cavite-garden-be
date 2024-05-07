@@ -69,28 +69,15 @@ class EmployeesModel
 
     public function getEmployeeByEmail($email)
     {
-        if (!is_string($email)) {
-            return false;
-        }
 
-        $query = "SELECT * FROM employees_tb WHERE email = :email";
+        $query = "SELECT * FROM employees_tb WHERE email = :email LIMIT 1";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':email', $email, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            $account_details = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-            if (empty($account_details)) {
-                return [];
-            }
-
-            $data = [
-                'data' => $account_details,
-                'role' => $account_details[0]['role']
-            ];
-
-            return $data;
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }

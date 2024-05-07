@@ -7,7 +7,7 @@ use Firebase\JWT\Key;
 
 use Helpers\ResponseHelper;
 
-require_once dirname(__DIR__) . '/config/load_env.php';
+require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 class JWTHelper

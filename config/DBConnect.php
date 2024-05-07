@@ -1,8 +1,8 @@
 <?php
 
-require_once dirname(__DIR__) . '/config/load_env.php';
+require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
 
-function db_connect()
+function DBConnect()
 {
     try {
         $environment = $_ENV['ENVIRONMENT'];

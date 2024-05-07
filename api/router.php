@@ -3,14 +3,14 @@
 use Helpers\HeaderHelper;
 use Helpers\ResponseHelper;
 
-require_once dirname(__DIR__) . '/config/db_connect.php';
+require_once dirname(__DIR__) . '/config/DBConnect.php';
 require_once dirname(__DIR__) . '/api/routes.php';
 
 // This code sets the necessary headers for the response.
 HeaderHelper::SendPreflighthHeaders();
 HeaderHelper::setResponseHeaders();
 
-$pdo = db_connect();
+$pdo = DBConnect();
 $route = new Route();
 
 $url = $_GET['url'] ?? '';
@@ -25,7 +25,7 @@ if ($middleware_required) {
     $middleware = $handler['middleware']['handler'];
 
     try {
-        require_once dirname(__DIR__) . '/middleware' . '/' . $middleware . '.php';
+        require_once dirname(__DIR__) . '/middlewares' . '/' . $middleware . '.php';
 
         $is_valid = new $middleware();
 
@@ -41,7 +41,7 @@ if ($middleware_required) {
 
 list($controller, $method) = explode('@', is_array($handler['handler']) ? $handler['handler']['handler'] : $handler['handler']);
 
-require_once dirname(__DIR__) . '/controller' . '/' . $controller . '.php';
+require_once dirname(__DIR__) . '/controllers' . '/' . $controller . '.php';
 
 $controller = new $controller($pdo);
 

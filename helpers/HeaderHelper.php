@@ -4,7 +4,7 @@ namespace Helpers;
 
 class HeaderHelper
 {
-    public static function SendPreflighthHeaders()
+    public static function SendPreflighthHeaders(): void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
@@ -18,7 +18,7 @@ class HeaderHelper
             exit();
         }
     }
-    public static function setResponseHeaders()
+    public static function setResponseHeaders(): void
     {
         header("Access-Control-Allow-Origin: http://localhost:5173");
         header("Access-Control-Allow-Credentials: true");

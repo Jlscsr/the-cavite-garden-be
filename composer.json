@@ -6,7 +6,9 @@
     "autoload": {
         "psr-4": {
             "Helpers\\": "./helpers",
-            "Models\\": "./model"
+            "Models\\": "./models",
+            "Builders\\": "./builders",
+            "Validators\\": "./validators"
         }
     }
 }
