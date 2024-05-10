@@ -2,8 +2,6 @@
 
 namespace Models;
 
-use Helpers\ResponseHelper;
-
 use Models\SubCategoriesModel;
 
 use PDO;
@@ -18,15 +16,24 @@ class CategoriesModel
     private $subCategoriesModel;
 
     private const PRODUCTS_CATEGORIES_TABLE = 'products_categories_tb';
+    private const PRODUCTS_SUB_CATEGORIES_TABLE = 'products_sub_categories_tb';
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
-        $this->column_names = ['id', 'name', 'description'];
     }
 
-    public function getAllPlantCategories()
+    /**
+     * Retrieves all categories from the database.
+     *
+     * This function fetches all product categories from the database table, 
+     *                          along with their subcategories if they exist.
+     *
+     * @throws RuntimeException If there is an error during the retrieval process.
+     * @return array An array containing all the product categories with their subcategories.
+     */
+    public function getAllCategories(): array
     {
         $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE;
 
@@ -42,13 +49,12 @@ class CategoriesModel
                 $subCategory = $this->subCategoriesModel->getSubCategoryByCategoryId($categoryID);
 
                 if (!empty($subCategory)) {
-                    if (!isset($categories[$key]['sub_categories'])) {
-                        $categories[$key]['sub_categories'] = [];
+                    if (!isset($categories[$key]['subCategories'])) {
+                        $categories[$key]['subCategories'] = [];
                     }
 
-                    // Append the sub categories
                     foreach ($subCategory as $item) {
-                        $categories[$key]['sub_categories'][] = $item;
+                        $categories[$key]['subCategories'][] = $item;
                     }
                 }
             }
@@ -59,140 +65,157 @@ class CategoriesModel
         }
     }
 
-    public function getCategoryById($id)
+    /**
+     * Retrieves a category by its ID from the database.
+     *
+     * @param int $id The ID of the category to retrieve.
+     * @throws InvalidArgumentException If the category ID is invalid.
+     * @throws RuntimeException If there is an error during the retrieval process.
+     * @return array An array containing the category information.
+     */
+    public function getCategoryById(int $id): array
     {
-        if (!$id) {
-            throw new InvalidArgumentException('Invalid category ID');
-        }
-
         $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
 
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':id', $id, PDO::PARAM_STR);
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function getCategoryByName($name)
+    /**
+     * Retrieves a category by its name from the database.
+     *
+     * @param string $categoryName The name of the category to retrieve.
+     * @throws RuntimeException If there is an error during the retrieval process.
+     * @return array An array containing the category information.
+     */
+    public function getCategoryByName(string $categoryName): array
     {
-        if (!is_string($name) && empty($name)) {
-            throw new InvalidArgumentException('Invalid category name');
-        }
-
-        $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE name = :name";
-
+        $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE categoryName = :categoryName";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':name', $name, PDO::PARAM_STR);
+        $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function addNewCategory($payload)
+    /**
+     * Retrieves the ID column of a category by its name from the database.
+     *
+     * @param string $categoryName The name of the category to retrieve.
+     * @throws RuntimeException If there is an error during the retrieval process.
+     * @return array An array containing the ID of the category.
+     */
+    public function getCategoryIDColumn(string $categoryName): array
     {
-        if (!is_array($payload) && empty($payload)) {
-            throw new InvalidArgumentException('Invalid category payload or empty payload');
-        }
-
-        $categoryName = $payload['category_name'];
-        $categoryDescription = $payload['category_description'];
-
-        $query = "INSERT INTO " . self::PRODUCTS_CATEGORIES_TABLE . " (name, description) VALUES (:categoryName, :categoryDescription)";
-
+        $query = "SELECT id FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE categoryName = :categoryName";
         $statement = $this->pdo->prepare($query);
+
+        $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+
+            return $statement->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
+    /**
+     * Adds a new category to the database.
+     *
+     * @param array $payload The data for the new category.
+     * @throws RuntimeException If an error occurs during the process.
+     * @return bool True if the category was added successfully, false otherwise.
+     */
+    public function addNewCategory(array $payload): bool
+    {
+        $categoryName = $payload['categoryName'];
+        $categoryDescription = $payload['categoryDescription'];
+
+        $query = "INSERT INTO " . self::PRODUCTS_CATEGORIES_TABLE . " (categoryName, categoryDescription) VALUES (:categoryName, :categoryDescription)";
+        $statement = $this->pdo->prepare($query);
+
         $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
         $statement->bindValue(':categoryDescription', $categoryDescription, PDO::PARAM_STR);
 
         try {
             $statement->execute();
+
             return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function editCategory($id, $data)
+    /**
+     * Edits a category in the database.
+     *
+     * @param int $categoryID The ID of the category to edit.
+     * @param array $payload The data to update the category with.
+     *                      Should contain 'categoryName' and 'categoryDescription' keys.
+     * @throws RuntimeException If there is an error during the update process.
+     * @return bool True if the category was successfully updated, false otherwise.
+     */
+    public function editCategory(int $categoryID, array $payload): bool
     {
-        if (!is_array($data) || empty($data) || !$id) {
-            throw new InvalidArgumentException('Invalid category data or empty data');
-        }
+        $categoryName = $payload['categoryName'];
+        $categoryDescription = $payload['categoryDescription'];
 
-        $categoryName = $data['category_name'];
-        $categoryDescription = $data['category_description'];
-
-        $query = "UPDATE " . self::PRODUCTS_CATEGORIES_TABLE . " SET name = :categoryName, description = :categoryDescription WHERE id = :id";
-
+        $query = "UPDATE " . self::PRODUCTS_CATEGORIES_TABLE . " SET categoryName = :categoryName, categoryDescription = :categoryDescription WHERE id = :id";
         $statement = $this->pdo->prepare($query);
+
+        $statement->bindValue(':id', $categoryID, PDO::PARAM_INT);
         $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
         $statement->bindValue(':categoryDescription', $categoryDescription, PDO::PARAM_STR);
-        $statement->bindValue(':id', $id, PDO::PARAM_STR);
 
         try {
             $statement->execute();
+
             return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function deleteCategory($id)
+    /**
+     * Deletes a category based on the provided categoryID.
+     *
+     * @param int $categoryID The ID of the category to delete.
+     * @throws RuntimeException If there is an error during the deletion process.
+     * @return bool True if the category was successfully deleted, false otherwise.
+     */
+    public function deleteCategory(int $categoryID): bool
     {
-        if (!$id) {
-            throw new InvalidArgumentException('Invalid category ID');
-        }
-
-        $query = "DELETE FROM products_tb WHERE categoryId = :id";
+        $query = "DELETE FROM " . self::PRODUCTS_SUB_CATEGORIES_TABLE . " WHERE categoryID = :id";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':id', $id, PDO::PARAM_STR);
+
+        $statement->bindValue(':id', $categoryID, PDO::PARAM_INT);
 
         try {
             $statement->execute();
 
             $query = "DELETE FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
             $statement = $this->pdo->prepare($query);
-            $statement->bindValue(':id', $id, PDO::PARAM_STR);
+
+            $statement->bindValue(':id', $categoryID, PDO::PARAM_INT);
 
             $statement->execute();
+
             return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
-        }
-    }
-
-    public function getCategoriesColumnBy($column, $condition_column, $condition_value)
-    {
-        if (!is_string($column) || !is_string($condition_column) || !is_string($condition_value)) {
-            throw new InvalidArgumentException('Invalid column name or condition column name or condition value');
-        }
-
-        $condition = null;
-
-        foreach ($this->column_names as $column_name) {
-            if ($column_name === $column) {
-                $condition = "$condition_column = :value";
-                break;
-            }
-        }
-
-        $query = "SELECT $column FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE $condition";
-
-        $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':value', $condition_value, PDO::PARAM_STR);
-
-        try {
-            $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 }

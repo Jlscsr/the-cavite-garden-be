@@ -32,20 +32,20 @@ class BaseMiddleware implements MiddlewareInterface
         try {
             $response = $this->cookieManager->validateCookiePressence();
 
-            if (is_array($response) && (['status'] === 'failed')) {
+            if (is_array($response) && isset($response['status']) && ($response['status'] === 'failed')) {
                 throw new RuntimeException($response['message']);
                 exit;
             }
 
-            $this->validateToken();
+            $this->validateToken($response);
         } catch (RuntimeException $e) {
             throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function validateToken()
+    public function validateToken($cookieHeader)
     {
-        $response = $this->cookieManager->extractAccessTokenFromCookieHeader();
+        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
 
         if (is_array($response) && isset($response['status']) && ($response['status'] === 'failed')) {
             throw new RuntimeException($response['message']);

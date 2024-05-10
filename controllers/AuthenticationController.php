@@ -53,21 +53,16 @@ class AuthenticationController
             $payload['lastName'] = filter_var($payload['lastName'], FILTER_SANITIZE_SPECIAL_CHARS);
             $payload['birthdate'] = filter_var($payload['birthdate'], FILTER_SANITIZE_SPECIAL_CHARS);
             $payload['phoneNumber'] = filter_var($payload['phoneNumber'], FILTER_SANITIZE_NUMBER_INT);
+            $payload['customerEmail'] = filter_var($payload['customerEmail'], FILTER_SANITIZE_EMAIL);
             $payload['password'] = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
-            $payload['email'] = filter_var($payload['email'], FILTER_SANITIZE_EMAIL);
 
             $hashed_password = password_hash($payload['password'], PASSWORD_BCRYPT, ['cost' => 15]);
             $payload['password'] = $hashed_password;
 
             $response = $this->customerModel->addNewCustomer($payload);
 
-            if (is_string($response)) {
-                ResponseHelper::sendErrorResponse($response, 500);
-                return;
-            }
-
             if (!$response) {
-                ResponseHelper::sendErrorResponse('Failed to register new customer', 500);
+                ResponseHelper::sendErrorResponse('Failed to register new customer', 400);
                 return;
             }
 
@@ -86,15 +81,15 @@ class AuthenticationController
      * @throws RuntimeException If an error occurs during login.
      * @return void
      */
-    public function login($payload)
+    public function login(array $payload): void
     {
         try {
             AuthenticationValidator::validateLoginPayload($payload);
 
-            $email = filter_var($payload['email'], FILTER_SANITIZE_EMAIL);
+            $email = filter_var($payload['customerEmail'], FILTER_SANITIZE_EMAIL);
             $password = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
 
-            $userAccount = $this->customerModel->getAccountByEmail($email) ?: $this->employeeModel->getEmployeeByEmail($email);
+            $userAccount = $this->customerModel->getCustomerByEmail($email) ?: $this->employeeModel->getEmployeeByEmail($email);
 
             if (!$userAccount || !password_verify($password, $userAccount['password'])) {
                 ResponseHelper::sendUnauthorizedResponse($userAccount ? 'Incorrect password' : 'Account not found');
@@ -142,14 +137,14 @@ class AuthenticationController
     public function checkToken()
     {
         try {
-            $this->cookieManager->validateCookiePressence();
+            $cookieHeader = $this->cookieManager->validateCookiePressence();
 
-            $token = $this->cookieManager->extractAccessTokenFromCookieHeader();
+            $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
 
-            if (!$this->jwt->validateToken($token)) {
+            if (!$this->jwt->validateToken($response['token'])) {
                 $this->cookieManager->resetCookieHeader();
                 ResponseHelper::sendUnauthorizedResponse('Invalid token');
-                return;
+                exit;
             }
 
             ResponseHelper::sendSuccessResponse([], 'Token is valid', 200);

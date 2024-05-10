@@ -5,6 +5,7 @@ namespace Models;
 use Helpers\ResponseHelper;
 
 use PDO;
+use RuntimeException;
 
 class HelperModel
 {
@@ -15,22 +16,19 @@ class HelperModel
         $this->pdo = $pdo;
     }
 
-    public function checkForDuplicateEmail($table_name, $email)
+    public function checkForDuplicateEmail($tableName, $email)
     {
-        if (!is_string($email)) {
-            return false;
-        }
 
-        $query = "SELECT * FROM $table_name WHERE email = :email";
+        $query = "SELECT COUNT(*) AS emailCount FROM $tableName WHERE customerEmail = :email";
         $statement = $this->pdo->prepare($query);
+
         $statement->bindValue(':email', $email, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->rowCount() > 0;
+            return $statement->fetchColumn() > 0;
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            exit;
+            throw new RuntimeException($e->getMessage());
         }
     }
 }

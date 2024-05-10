@@ -26,6 +26,7 @@ class CookieManager
      */
     public function setCookiHeader($token, $expiryDate)
     {
+        self::resetCookieHeader();
         setcookie($this->cookieName, $token, $expiryDate, '/', '', $this->isSecure, $this->isHttpOnly);
     }
 
@@ -54,13 +55,9 @@ class CookieManager
      *
      * @return string The access token extracted from the cookie header.
      */
-    public function extractAccessTokenFromCookieHeader()
+    public function extractAccessTokenFromCookieHeader($cookieHeader)
     {
-        $headers = getallheaders();
-
-        $this->validateCookiePressence();
-
-        $token = $headers['Cookie'];
+        $token = $cookieHeader;
 
         if (strpos($token, $this->cookieName) === false) {
             $this->resetCookieHeader();
@@ -90,5 +87,7 @@ class CookieManager
             return ['status' => 'failed', 'message' => 'Cookie header is missing'];
             exit;
         }
+
+        return $headers['Cookie'];
     }
 }

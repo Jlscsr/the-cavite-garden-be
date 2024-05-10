@@ -1,17 +1,14 @@
 <?php
 
 use Helpers\ResponseHelper;
-use Helpers\HeaderHelper;
+
+use Validators\ProductsValidator;
 
 use Models\ProductsModel;
-use Models\CategoriesModel;
-use Models\SubCategoriesModel;
 
 class ProductsController
 {
     private $productsModel;
-    private $categoriesModel;
-    private $subCategoriesModel;
 
     /**
      * Constructor for the class.
@@ -21,224 +18,193 @@ class ProductsController
      */
     public function __construct($pdo)
     {
-        $this->categoriesModel = new CategoriesModel($pdo);
-        $this->subCategoriesModel = new SubCategoriesModel($pdo);
         $this->productsModel = new ProductsModel($pdo);
-
-
-        HeaderHelper::setResponseHeaders();
     }
 
-    public function getAllProducts()
+    /**
+     * Retrieves all products from the database.
+     *
+     * This function calls the `getAllProducts` method of the `$productsModel` object to fetch all products from the database.
+     * If the result is empty, it sends a 404 error response with the message "No products found".
+     * Otherwise, it sends a success response with the retrieved products and the message "Products retrieved successfully".
+     *
+     * @throws RuntimeException If an error occurs during the retrieval of products.
+     * @return void
+     */
+    public function getAllProducts(): void
     {
         try {
             $products = $this->productsModel->getAllProducts();
 
             if (empty($products)) {
                 ResponseHelper::sendErrorResponse("No products found", 404);
-                return;
+                exit;
             }
 
-            $products = $this->addCategoryAndSubCategoryNamesToProducts($products);
-
             ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
-            return;
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
-
     /**
-     * Retrieves a product by its ID from the database.
+     * Retrieves a product by ID from the database.
      *
-     * @param array $param The parameter containing the product ID.
-     * @throws RuntimeException If there is an error during the database operation.
+     * This function validates the parameter passed to it using the ProductsValidator class. It then retrieves the product
+     * from the database that has the specified ID using the ProductsModel class. If no product is found, a 404 error response
+     * is sent with a message indicating that no product was found. If a product is found, a success response is sent with
+     * the retrieved product and a message indicating that the product was retrieved successfully.
+     *
+     * @param array $parameter The parameter containing the ID of the product.
+     * @throws RuntimeException If an error occurs during the retrieval of the product.
+     * @throws InvalidArgumentException If the parameter is invalid.
      * @return void
      */
-    public function getProductByID($param)
+    public function getProductByID(array $parameter): void
     {
-
-        if (!isset($param['id']) && empty($param['id'])) {
-            ResponseHelper::sendErrorResponse("Invalid parameter type.", 400);
-            return;
-        }
-
-        $productID = (int) $param['id'];
-
         try {
+            ProductsValidator::validateGetProductRequestsByParameter($parameter);
 
-            $products = $this->productsModel->getProductByID($productID);
+            $products = $this->productsModel->getProductByID((int) $parameter['id']);
 
             if (empty($products)) {
                 ResponseHelper::sendErrorResponse("No products found by that id.", 404);
                 return;
             }
 
-            $productCategory = $this->categoriesModel->getCategoryById($products['categoryId']);
-            $productSubCategory = $this->subCategoriesModel->getSubCategoryById($products['subCategoryId']);
-
-            $products['category_name'] = !empty($productCategory) ? $productCategory[0]['name'] : null;
-            $products['sub_category_name'] = !empty($productSubCategory) ? $productSubCategory[0]['name'] : null;
-
             ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
         } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
-
     /**
-     * Retrieves all products from the database based on the given category ID.
+     * Retrieves all products by category from the database.
      *
-     * @param array $param The parameter containing the category ID.
-     *                    The 'id' key should be set and not empty.
-     * @throws RuntimeException If there is an error during the database operation.
+     * This function validates the parameter passed to it using the ProductsValidator class. It then retrieves all products
+     * from the database that belong to the specified category using the ProductsModel class. If no products are found, a
+     * 404 error response is sent with a message indicating that no products were found. If products are found, a success
+     * response is sent with the retrieved products and a message indicating that the products were retrieved successfully.
+     *
+     * @param array $parameter The parameter containing the name of the category.
+     * @throws RuntimeException If an error occurs during the retrieval of products.
+     * @throws InvalidArgumentException If the parameter is invalid.
      * @return void
      */
-    public function getAllProductsByCategory($param)
+    public function getAllProductsByCategory(array $parameter): void
     {
-
-        if (!isset($param['id']) && empty($param['id'])) {
-            ResponseHelper::sendErrorResponse("Invalid plant type.", 400);
-            return;
-        }
-
-        $categoryID = (int) $param['id'];
-
         try {
-            $products = $this->productsModel->getAllProductsByCategory($categoryID);
+            ProductsValidator::validateGetProductRequestsByParameter($parameter);
+
+            $products = $this->productsModel->getAllProductsByCategory((int) $parameter['id']);
 
             if (empty($products)) {
-                ResponseHelper::sendErrorResponse("No Products found base on the Category", 200);
+                ResponseHelper::sendErrorResponse("No Products found base on the Category", 404);
                 return;
             }
 
-            $products = $this->addCategoryAndSubCategoryNamesToPlants($products);
-
             ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
-
 
     /**
      * Adds a new product to the database.
      *
-     * @param array $payload The payload containing the product data.
-     * @throws RuntimeException If there is an error during the database operation.
+     * This function validates the payload passed to it using the ProductsValidator class. It then adds the new product
+     * to the database using the ProductsModel class. If the product is successfully added, a success response is sent
+     * with a message indicating that the product was added successfully. If the product fails to be added, a 500 error
+     * response is sent with a message indicating that the product failed to be added.
+     *
+     * @param array $payload The payload containing the details of the product to be added.
+     * @throws RuntimeException If an error occurs during the addition of the product.
+     * @throws InvalidArgumentException If the payload is invalid.
      * @return void
      */
-    public function addNewProduct($payload)
+    public function addNewProduct(array $payload): void
     {
-        if (!is_array($payload) && empty($payload)) {
-            ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
-            return;
-        }
-
         try {
+            ProductsValidator::validateAddProductRequest($payload);
+
             $response = $this->productsModel->addNewProduct($payload);
 
             if (empty($response)) {
-                ResponseHelper::sendErrorResponse("Failed to add new product", 500);
+                ResponseHelper::sendErrorResponse("Failed to add new product", 400);
                 return;
             }
 
             ResponseHelper::sendSuccessResponse([], 'Product added successfully', 201);
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
-
 
     /**
      * Edits a product in the database.
      *
-     * @param array $param An associative array containing the product ID.
-     * @param array $payload An associative array containing the updated product data.
-     * @throws RuntimeException If there is an error during the database operation.
+     * This function validates the edit product request using the ProductsValidator class.
+     * It then edits the product in the database using the ProductsModel class.
+     * If the product is successfully edited, a success response is sent with a message indicating that the product was edited successfully.
+     * If the product fails to be edited, a 500 error response is sent with a message indicating that the product failed to be edited.
+     *
+     * @param array $parameter The parameter containing the ID of the product to be edited.
+     * @param array $payload The payload containing the details of the product to be edited.
+     * @throws RuntimeException If an error occurs during the editing of the product.
+     * @throws InvalidArgumentException If the parameter or payload is invalid.
      * @return void
      */
-    public function editProduct($param, $payload)
+    public function editProduct(array $parameter, array $payload): void
     {
-
-        if (!is_array($payload) || empty($payload) || !isset($param['id']) || empty($param['id'])) {
-            ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
-            return;
-        }
-
         try {
-            $productID = (int) $param['id'];
+            ProductsValidator::validateEditProductRequest($parameter, $payload);
 
-            $response = $this->productsModel->editProduct($productID, $payload);
+            $response = $this->productsModel->editProduct((int) $parameter['id'], $payload);
 
             if (empty($response)) {
-                ResponseHelper::sendErrorResponse("Failed to edit product", 500);
+                ResponseHelper::sendErrorResponse("Failed to edit product", 400);
                 return;
             }
 
-            ResponseHelper::sendSuccessResponse(null, 'Product edited successfully', 201);
+            ResponseHelper::sendSuccessResponse([], 'Product edited successfully', 201);
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
     /**
-     * Deletes a product from the database based on the provided ID.
+     * Deletes a product in the database.
      *
-     * @param array $param An associative array containing the ID of the product to be deleted.
-     *                     The array must have a key 'id' with a non-empty value.
-     * @throws RuntimeException If there is an error during the database operation.
+     * This function validates the delete product request using the ProductsValidator class.
+     * It then deletes the product in the database using the ProductsModel class.
+     * If the product is successfully deleted, a success response is sent with a message indicating that the product was deleted successfully.
+     * If the product fails to be deleted, a 500 error response is sent with a message indicating that the product failed to be deleted.
+     *
+     * @param array $parameter The parameter containing the ID of the product to be deleted.
+     * @throws RuntimeException If an error occurs during the deletion of the product.
      * @return void
      */
-    public function deleteProduct($param)
+    public function deleteProduct(array $parameter): void
     {
-        if (!is_array($param) || !isset($param['id']) || empty($param)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
-            return;
-        }
-
         try {
-            $response = $this->productsModel->deleteProduct($param['id']);
+            ProductsValidator::validateDeleteProductRequest($parameter);
+
+            $response = $this->productsModel->deleteProduct((int) $parameter['id']);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to delete product", 500);
+                ResponseHelper::sendErrorResponse("Failed to delete product", 400);
                 return;
             }
 
-            ResponseHelper::sendSuccessResponse(null, 'Product deleted successfully');
+            ResponseHelper::sendSuccessResponse([], 'Product deleted successfully');
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
-    }
-
-
-    /**
-     * Adds category and subcategory names to products.
-     *
-     * @param array $products The array of products.
-     * @return array The modified array of products with category and subcategory names added.
-     */
-    private function addCategoryAndSubCategoryNamesToProducts($products)
-    {
-        $productsCopy = $products;
-
-        foreach ($productsCopy as $key => &$value) {
-            $category = $this->categoriesModel->getCategoryById($value['categoryId']);
-            $value['category_name'] = $category[0]['name'];
-        }
-        unset($value);
-
-        foreach ($productsCopy as $key => &$value) {
-            $sub_category = $this->subCategoriesModel->getSubCategoryById($value['subCategoryId']);
-
-            if (!empty($sub_category)) {
-                $value['sub_category_name'] = $sub_category[0]['name'];
-            }
-        }
-        unset($value);
-
-        return $productsCopy;
     }
 }

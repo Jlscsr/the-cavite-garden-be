@@ -2,15 +2,15 @@
 
 namespace Helpers;
 
+require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-use Helpers\ResponseHelper;
 use RuntimeException;
 use UnexpectedValueException;
 
-require_once dirname(__DIR__) . '/config/LoadEnvVariables.php';
-require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 class JWTHelper
 {

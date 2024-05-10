@@ -80,19 +80,19 @@ class CustomersModel
         }
     }
 
-    public function getAccountByEmail($email)
+    public function getCustomerByEmail($customerEmail)
     {
-
-        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :email LIMIT 1";
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE customerEmail = :customerEmail LIMIT 1";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':email', $email, PDO::PARAM_STR);
+
+        $statement->bindValue(':customerEmail', $customerEmail, PDO::PARAM_STR);
 
         try {
             $statement->execute();
 
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            throw new RuntimeException($e->getMessage());
         }
     }
 
@@ -122,36 +122,31 @@ class CustomersModel
         }
     }
 
-    public function addNewCustomer($customerData)
+    public function addNewCustomer($payload)
     {
-        if (!is_array($customerData) && empty($customerData)) {
-            return [];
-        }
-
-        $response = $this->helper_model->checkForDuplicateEmail('customers_tb', $customerData['email']);
+        $response = $this->helper_model->checkForDuplicateEmail(self::CUSTOMERS_TABLE, $payload['customerEmail']);
 
         if ($response) {
-            return "Email already in use";
+            throw new RuntimeException('Email already exists');
         }
 
-        $first_name = $customerData['first_name'];
-        $last_name = $customerData['last_name'];
-        $birthdate = $customerData['birthdate'];
-        $phone_number = $customerData['phone_number'];
-        $email = $customerData['email'];
-        $password = $customerData['password'];
+        $firstName = $payload['firstName'];
+        $lastName = $payload['lastName'];
+        $birthdate = $payload['birthdate'];
+        $phoneNumber = $payload['phoneNumber'];
+        $customerEmail = $payload['customerEmail'];
+        $password = $payload['password'];
 
-        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (first_name, last_name, phone_number, birthdate, email, password) 
-            VALUES (:first_name, :last_name, :phone_number, :birthdate, :email, :password)";
+        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (firstName, lastName, phoneNumber, birthdate, customerEmail, password) VALUES (:firstName, :lastName, :phoneNumber, :birthdate, :customerEmail, :password)";
 
         $statement = $this->pdo->prepare($query);
 
         $bind_params = [
-            ':first_name' => $first_name,
-            ':last_name' => $last_name,
+            ':firstName' => $firstName,
+            ':lastName' => $lastName,
             ':birthdate' => $birthdate,
-            ':email' => $email,
-            ':phone_number' => $phone_number,
+            ':customerEmail' => $customerEmail,
+            ':phoneNumber' => $phoneNumber,
             ':password' => $password,
         ];
 
@@ -165,26 +160,6 @@ class CustomersModel
             return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            exit;
-        }
-    }
-
-    public function checkForDuplicateEmail($email)
-    {
-        if (!is_string($email)) {
-            return false;
-        }
-
-        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :email";
-        $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':email', $email, PDO::PARAM_STR);
-
-        try {
-            $statement->execute();
-            return $statement->rowCount() > 0;
-        } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            exit;
         }
     }
 

@@ -7,7 +7,7 @@ use Models\SubCategoriesModel;
 
 use PDO;
 
-use InvalidArgumentException;
+use PDOException;
 use RuntimeException;
 
 class ProductsModel
@@ -17,14 +17,9 @@ class ProductsModel
     private $subCategoriesModel;
 
     private const PRODUCTS_TABLE = 'products_tb';
+    private const CATEGORIES_TABLE = 'products_categories_tb';
+    private const SUB_CATEGORIES_TABLE = 'products_sub_categories_tb';
 
-    /**
-     * Constructs a new instance of the class.
-     *
-     * @param PDO $pdo The PDO object for database connection.
-     * @param CategoriesModel $categoriesModel The instance of the CategoriesModel class.
-     * @param SubCategoriesModel $subCategoriesModel The instance of the SubCategoriesModel class.
-     */
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
@@ -32,90 +27,90 @@ class ProductsModel
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
     }
 
-
     /**
-     * Retrieves all products from the database.
+     * Retrieves all products from the database, along with their category and subcategory names.
      *
-     * @throws RuntimeException if there is a database error
-     * @return array an array of associative arrays representing the products
+     * @return array An array of associative arrays representing the products with their category and subcategory names.
+     * @throws RuntimeException Database Error: if there is an issue with the database connection.
      */
     public function getAllProducts()
     {
-        $query = "SELECT * FROM " . self::PRODUCTS_TABLE;
-        $statement = $this->pdo->prepare($query);
-
         try {
-            $statement->execute();
+            $query = "
+                SELECT p.*, c.categoryName as categoryName,
+                CASE 
+                    WHEN p.subCategoryId IS NULL THEN NULL
+                    ELSE sc.subCategoryName
+                END as subCategoryName
+                FROM " . self::PRODUCTS_TABLE . " p
+                JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
+                LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
+            ";
+
+            $statement = $this->pdo->query($query);
+
             return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
     }
 
-
     /**
-     * Retrieves a product from the database by its ID.
+     * Retrieves a product from the database by its ID, along with its category and subcategory names.
      *
      * @param int $productID The ID of the product to retrieve.
-     * @throws InvalidArgumentException If the product ID is invalid or missing.
-     * @throws RuntimeException If the product is not found or there is a database error.
-     * @return array An associative array representing the product details, including the category and subcategory names.
+     * @throws RuntimeException Database Error: if there is an issue with the database connection.
+     * @return array|null An associative array representing the product with its category and subcategory names, or null if no product is found.
      */
     public function getProductByID($productID)
     {
-        if (!$productID) {
-            throw new InvalidArgumentException('Invalid or missing product ID parameter');
-        }
-
-        $query = "SELECT * FROM " . self::PRODUCTS_TABLE . " WHERE id = :plantID";
+        $query = "
+                SELECT p.*, c.categoryName as categoryName,
+                CASE 
+                    WHEN p.subCategoryID IS NULL THEN NULL
+                    ELSE sc.subCategoryName
+                END as subCategoryName
+                FROM " . self::PRODUCTS_TABLE . " p
+                JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
+                LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
+                WHERE p.id = :plantID
+            ";
 
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':plantID', $productID, PDO::PARAM_STR);
+        $statement->bindValue(':plantID', $productID, PDO::PARAM_INT);
 
         try {
             $statement->execute();
 
-            if (!$statement->rowCount() > 0) {
-                throw new RuntimeException("Products not found");
-            }
-
-            $productDetails = $statement->fetch(PDO::FETCH_ASSOC);
-
-            $categoryID = $productDetails['categoryId'];
-            $subCategoryID = $productDetails['subCategoryId'];
-
-            $categoryName = $this->categoriesModel->getCategoriesColumnBy('name', 'id', $categoryID);
-            $subCategoryName = $this->subCategoriesModel->getSubCategoriesColumnBy('name', 'id', $subCategoryID);
-
-
-            $productDetails['category_name'] = $categoryName['name'] ?? null;
-            $productDetails['sub_category_name'] = $subCategoryName['name'] ?? null;
-
-            return $productDetails;
+            return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
     }
 
-
     /**
-     * Retrieves all products from the database by category ID.
+     * Retrieves all products from the database that belong to a specific category.
      *
-     * @param int $categoryID The ID of the category to retrieve products for.
-     * @throws InvalidArgumentException If the category ID is invalid or missing.
-     * @throws RuntimeException If there is a database error.
-     * @return array An array of associative arrays representing the products.
+     * @param int $categoryID The ID of the category.
+     * @throws RuntimeException Database Error: if there is an issue with the database connection.
+     * @return array An array of associative arrays representing the products with their category and subcategory names.
      */
     public function getAllProductsByCategory($categoryID)
     {
-        if (!$categoryID) {
-            throw new InvalidArgumentException('Invalid or missing category ID parameter');
-        }
-
-        $query = "SELECT * FROM " . self::PRODUCTS_TABLE . " WHERE categoryId = :categoryId";
+        $query = "
+                SELECT p.*, c.categoryName as categoryName,
+                CASE 
+                    WHEN p.subCategoryID IS NULL THEN NULL
+                    ELSE sc.subCategoryName
+                END as subCategoryName
+                FROM " . self::PRODUCTS_TABLE . " p
+                JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
+                LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
+                WHERE c.id = :categoryID
+            ";
 
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':categoryId', $categoryID, PDO::PARAM_STR);
+        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_INT);
 
         try {
             $statement->execute();
@@ -124,60 +119,53 @@ class ProductsModel
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
     }
-
 
     /**
      * Adds a new product to the database.
      *
      * @param array $payload The payload containing the product details.
-     * @throws InvalidArgumentException If the payload is invalid or empty.
-     * @throws RuntimeException If the category is not found.
+     *                       It should have the following keys:
+     *                       - productPhotoURL: The URL of the product photo.
+     *                       - productName: The name of the product.
+     *                       - productCategory: The category of the product.
+     *                       - productSubCategory: The sub-category of the product (optional).
+     *                       - productPrice: The price of the product.
+     *                       - productSize: The size of the product.
+     *                       - productStock: The stock of the product.
+     *                       - productDescription: The description of the product.
+     * @throws RuntimeException If there is a database error.
      * @return bool Returns true if the product is successfully added, false otherwise.
      */
     public function addNewProduct($payload)
     {
+        $productPhotoURL = $payload['productPhotoURL'];
+        $productName = $payload['productName'];
+        $productCategory = $payload['productCategory'];
+        $productSubCategory = $payload['productSubCategory'];
+        $productPrice = $payload['productPrice'];
+        $productSize = $payload['productSize'];
+        $productStock = $payload['productStock'];
+        $productDescription = $payload['productDescription'];
 
-        if (!is_array($payload) && empty($payload)) {
-            throw new InvalidArgumentException("Invalid payload or payload is empty");
-        }
+        $categoryID = $this->categoriesModel->getCategoryIDColumn($productCategory);
 
-        $productPhotoURL = $payload['product_photo_url'];
-        $productName = $payload['product_name'];
-        $productCategory = $payload['product_category'];
-        $productSubCategory = $payload['product_sub_category'] ?? '';
-        $productPrice = $payload['product_price'];
-        $productSize = $payload['pot_size'] ?? '';
-        $stock = $payload['stock'];
-        $productDescription = $payload['product_description'];
+        $subCategoryID = $productSubCategory ? $this->subCategoriesModel->getSubCategoryIDColumn($productSubCategory) : null;
 
-        $categoryID = $this->categoriesModel->getCategoriesColumnBy('id', 'name', $productCategory);
-        $subCategoryId = null;
+        $categoryID = $categoryID['id'];
+        $subCategoryID = isset($subCategoryID['id']) ? $subCategoryID['id'] : null;
 
-        if ($productSubCategory !== '') {
-            $subCategoryId = $this->subCategoriesModel->getCategoriesColumnBy('id', 'name', $productSubCategory);
-        }
-
-        if (!$subCategoryId) {
-            $subCategoryId = null;
-        }
-
-        if ($categoryID === null) {
-            throw new RuntimeException("Category not found");
-            return;
-        }
-
-        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (categoryId, subCategoryId, plant_name, plant_description, size, plant_image, plant_price, stock) VALUES (:category_id, :sub_category_id, :plant_name, :plant_description, :size, :plant_image, :plant_price, :stock)";
+        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (categoryID, subCategoryID, productName, productDescription, productImage, productStock, productSize, productPrice) VALUES (:categoryID, :subCategoryID, :productName, :productDescription, :productImage, :productStock, :productSize, :productPrice)";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
-            ':category_id' => $categoryID,
-            ':sub_category_id' => $subCategoryId,
-            ':plant_name' => $productName,
-            ':plant_description' => $productDescription,
-            ':size' => $productSize,
-            ':plant_image' => $productPhotoURL,
-            ':plant_price' => $productPrice,
-            ':stock' => $stock
+            ':categoryID' => $categoryID,
+            ':subCategoryID' => $subCategoryID,
+            ':productName' => $productName,
+            ':productDescription' => $productDescription,
+            ':productImage' => $productPhotoURL,
+            ':productStock' => $productStock,
+            ':productSize' => $productSize,
+            ':productPrice' => $productPrice,
         ];
 
         foreach ($bindParams as $value => $key) {
@@ -193,48 +181,52 @@ class ProductsModel
         }
     }
 
-
     /**
-     * Edit a product in the database.
+     * Edits a product in the database.
      *
      * @param int $productID The ID of the product to edit.
-     * @param array $payload The payload containing the product details.
-     * @throws InvalidArgumentException If the product ID parameter is invalid or missing.
-     * @throws RuntimeException If there is a database error.
-     * @return bool Returns true if the product is successfully edited, false otherwise.
+     * @param array $payload An associative array containing the updated product data.
+     *                       The array should have the following keys:
+     *                       - productPhotoURL (string): The URL of the product's photo.
+     *                       - productName (string): The name of the product.
+     *                       - productCategory (string): The category of the product.
+     *                       - productSubCategory (string|null): The subcategory of the product (optional).
+     *                       - productPrice (float): The price of the product.
+     *                       - productSize (string): The size of the product.
+     *                       - productStock (int): The stock quantity of the product.
+     *                       - productDescription (string): The description of the product.
+     * @throws RuntimeException If there is an error during the database operation.
+     * @return bool True if the product was successfully edited, false otherwise.
      */
     public function editProduct($productID, $payload)
     {
+        $productPhotoURL = $payload['productPhotoURL'];
+        $productName = $payload['productName'];
+        $productCategory = $payload['productCategory'];
+        $productSubCategory = $payload['productSubCategory'];
+        $productPrice = $payload['productPrice'];
+        $productSize = $payload['productSize'];
+        $productStock = $payload['productStock'];
+        $productDescription = $payload['productDescription'];
 
-        if (!is_array($payload) || empty($payload) || !$productID) {
-            throw new InvalidArgumentException("Invalid or missing product ID parameter");
-        }
+        $categoryID = $this->categoriesModel->getCategoryIDColumn($productCategory);
+        $subCategoryID = $productSubCategory ? $this->subCategoriesModel->getSubCategoryIDColumn($productSubCategory) : null;
 
-        $productPhotoURL = $payload['product_photo_url'];
-        $productName = $payload['product_name'];
-        $productCategory = $payload['product_category'];
-        $productSubCategory = $payload['product_sub_category'] ?? '';
-        $productPrice = $payload['product_price'];
-        $size = $payload['pot_size'] ?? '';
-        $productDescription = $payload['product_description'];
+        $categoryID = $categoryID['id'];
+        $subCategoryID = isset($subCategoryID['id']) ? $subCategoryID['id'] : null;
 
-        $categoryID = $this->categoriesModel->getCategoryByName($productCategory);
-        $categoryID = $categoryID[0]['id'];
-
-        $subCategoryID = $this->subCategoriesModel->getSubCategoryByName($productSubCategory);
-        $subCategoryID = $subCategoryID[0]['id'];
-
-        $query = "UPDATE " . self::PRODUCTS_TABLE . " SET categoryId = :categoryID, subCategoryId = :subCategoryID, product_name = :productName, product_description = :productDescription, size = :size, product_image = :productImage, product_price = :productPrice WHERE id = :id";
+        $query = "UPDATE " . self::PRODUCTS_TABLE . " SET categoryID = :categoryID, subCategoryID = :subCategoryID, productName = :productName, productDescription = :productDescription, productImage = :productImage, productStock = :productStock, productSize = :productSize, productPrice = :productPrice WHERE id = :id";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
-            ':id' => $productID,
+            'id' => $productID,
             ':categoryID' => $categoryID,
             ':subCategoryID' => $subCategoryID,
             ':productName' => $productName,
             ':productDescription' => $productDescription,
-            ':size' => $size,
-            ':plantImage' => $productPhotoURL,
+            ':productImage' => $productPhotoURL,
+            ':productStock' => $productStock,
+            ':productSize' => $productSize,
             ':productPrice' => $productPrice,
         ];
 
@@ -251,29 +243,23 @@ class ProductsModel
         }
     }
 
-
     /**
-     * Deletes a product from the database.
+     * Deletes a product from the database based on the provided ID.
      *
      * @param int $productID The ID of the product to be deleted.
-     * @throws InvalidArgumentException If the product ID is invalid or missing.
-     * @throws RuntimeException If there is a database error.
+     * @throws RuntimeException If there is an error during the database operation.
      * @return bool Returns true if the product is successfully deleted, false otherwise.
      */
     public function deleteProduct($productID)
     {
-        if (!$productID) {
-            throw new InvalidArgumentException("Invalid or missing product ID parameter");
-        }
+        $query = "DELETE FROM " . self::PRODUCTS_TABLE . " WHERE id = :id";
+        $statement = $this->pdo->prepare($query);
 
-        $delete_query = "DELETE FROM " . self::PRODUCTS_TABLE . " WHERE id = :id";
-
-        $delete_query = $this->pdo->prepare($delete_query);
-        $delete_query->bindValue(':id', $productID, PDO::PARAM_STR);
+        $statement->bindValue(':id', $productID, PDO::PARAM_INT);
 
         try {
-            $delete_query->execute();
-            return $delete_query->rowCount() > 0;
+            $statement->execute();
+            return $statement->rowCount() > 0;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }

@@ -4,8 +4,8 @@ namespace Interfaces;
 
 interface ValidatorInterface
 {
-    public static function validateGETParameter(array $parameter);
-    public static function validatePOSTPayload(array $payload);
-    public static function validatePUTPayload(array $payload);
-    public static function validateDELETEParameter(array $parameter);
+    public static function validateGETRequest(array $parameter);
+    public static function validatePOSTRequest(array $payload);
+    public static function validatePUTRequest(array $parameter, array $payload);
+    public static function validateDELETERequest(array $parameter);
 }

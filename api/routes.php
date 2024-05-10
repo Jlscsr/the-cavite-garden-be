@@ -7,8 +7,23 @@ class Route
     public function __construct()
     {
         $this->routes = [
+            "api/subcategory/delete/:id" => [
+                "handler" => "SubCategoriesController@deleteSubCategory",
+                "middleware" => true,
+                "requiredRole" => "admin"
+            ],
+            "api/subcategory/edit/:id" => [
+                "handler" => "SubCategoriesController@editSubCategory",
+                "middleware" => true,
+                "requiredRole" => "admin"
+            ],
             "api/subcategory/add" => [
                 "handler" => "SubCategoriesController@addNewSubCategory",
+                "middleware" => true,
+                "requiredRole" => "admin"
+            ],
+            "api/subcategories" => [
+                "handler" => "SubCategoriesController@getAllSubCategories",
                 "middleware" => true,
                 "requiredRole" => "admin"
             ],
@@ -103,7 +118,7 @@ class Route
                 "middleware" => true,
                 "requiredRole" => "admin"
             ],
-            "api/product/category/:id" => [
+            "api/products/category/:id" => [
                 "handler" => "ProductsController@getAllProductsByCategory",
                 "middleware" => true,
                 "requiredRole" => "both"
@@ -133,7 +148,7 @@ class Route
                 "requiredRole" => "both"
             ],
             "api/categories" => [
-                "handler" => "CategoriesController@getAllPlantCategories",
+                "handler" => "CategoriesController@getAllCategories",
                 "middleware" => true,
                 "requiredRole" => "both"
             ],
