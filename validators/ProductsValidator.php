@@ -20,6 +20,13 @@ class ProductsValidator extends RequestValidator
         'productDescription' => '/^.{10,}$/'
     ];
 
+    /**
+     * Validates the GET request parameters for getting product requests.
+     *
+     * @param array $parameter The array containing the parameters to be validated.
+     * @throws InvalidArgumentException If the parameter is invalid.
+     * @return void
+     */
     public static function validateGetProductRequestsByParameter(array $parameter): void
     {
         self::validateGETRequest($parameter);
@@ -39,6 +46,18 @@ class ProductsValidator extends RequestValidator
         }
     }
 
+    /**
+     * Validates the given payload for adding a new product.
+     *
+     * This function validates the payload for adding a new product by performing the following checks:
+     * - Calls the validatePOSTRequest function to validate the payload.
+     * - Checks if all the required fields in the payload are present.
+     * - Checks if the values of the payload match the required formats.
+     *
+     * @param array $payload The data for the new product.
+     * @throws InvalidArgumentException If the payload is invalid.
+     * @return void
+     */
     public static function validateAddProductRequest(array $payload): void
     {
         self::validatePOSTRequest($payload);
@@ -46,14 +65,37 @@ class ProductsValidator extends RequestValidator
         self::checkFieldsPattern($payload, self::$requiredFields);
     }
 
-    public static function validateEditProductRequest(array $parameter, array $payload)
+    /**
+     * Validates the edit product request.
+     *
+     * This function validates the edit product request by performing the following checks:
+     * - Calls the validatePUTRequest function to validate the request.
+     * - Checks if all the required fields in the payload are present.
+     * - Checks if the values of the payload match the required formats.
+     *
+     * @param array $parameter The parameters for the edit request.
+     * @param array $payload The data to be edited.
+     * @throws InvalidArgumentException If the parameter or payload is invalid.
+     * @return void
+     */
+    public static function validateEditProductRequest(array $parameter, array $payload): void
     {
         self::validatePUTRequest($parameter, $payload);
         self::checkRequiredFields($payload, self::$requiredFields);
         self::checkFieldsPattern($payload, self::$requiredFields);
     }
 
-    public static function validateDeleteProductRequest(array $parameter)
+    /**
+     * Validates the delete product request by performing the following checks:
+     * - Calls the validateDELETERequest function to validate the request.
+     * - Checks if all the required parameters are present.
+     * - Checks if the ID field is a number type.
+     *
+     * @param array $parameter The array containing the parameters to be validated.
+     * @throws InvalidArgumentException If the parameter is invalid.
+     * @return void
+     */
+    public static function validateDeleteProductRequest(array $parameter): void
     {
         self::validateDELETERequest($parameter);
 

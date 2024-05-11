@@ -5,6 +5,6 @@ namespace Interfaces;
 interface MiddlewareInterface
 {
     public function checkCookiePresence();
-    public function validateToken($cookieHeader);
-    public function verifyUserRole(array $decodedToken);
+    public function validateToken(string $cookieHeader);
+    public function verifyUserRole(object $decodedToken);
 }

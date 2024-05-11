@@ -27,17 +27,17 @@ class Route
                 "middleware" => true,
                 "requiredRole" => "admin"
             ],
-            "api/employees/edit/:id" => [
+            "api/employee/edit/:id" => [
                 "handler" => "EmployeesController@editEmployee",
                 "middleware" => true,
                 "requiredRole" => "admin"
             ],
-            "api/employees/add" => [
+            "api/employee/add" => [
                 "handler" => "EmployeesController@addNewEmployee",
                 "middleware" => true,
                 "requiredRole" => "admin"
             ],
-            "api/employee/info" => [
+            "api/employee" => [
                 "handler" => "EmployeesController@getEmployeeById",
                 "middleware" => true,
                 "requiredRole" => "admin"
@@ -83,7 +83,7 @@ class Route
                 "requiredRole" => "customer"
             ],
             "api/cart/add" => [
-                "handler" => "CartController@addToCart",
+                "handler" => "CartController@addProductToCart",
                 "middleware" => true,
                 "requiredRole" => "customer"
             ],
@@ -149,12 +149,12 @@ class Route
             ],
             "api/categories" => [
                 "handler" => "CategoriesController@getAllCategories",
-                "middleware" => true,
+                "middleware" => false,
                 "requiredRole" => "both"
             ],
             "api/products" => [
                 "handler" => "ProductsController@getAllProducts",
-                "middleware" => true,
+                "middleware" => false,
                 "requiredRole" => "both"
             ],
         ];

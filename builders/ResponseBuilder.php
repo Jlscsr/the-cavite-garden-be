@@ -9,13 +9,6 @@ class ResponseBuilder
     private string $statusMessage = '';
     private int $statusCode = 200;
 
-    /**
-     * Constructor for the class.
-     *
-     * @param string $message The message to be set.
-     * @param string $statusMessage The status message to be set.
-     * @param int $statusCode The status code to be set.
-     */
     public function __construct(string $message, string $statusMessage, int $statusCode)
     {
         $this->message = $message;

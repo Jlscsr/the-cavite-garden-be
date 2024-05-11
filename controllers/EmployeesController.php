@@ -3,7 +3,8 @@
 use Helpers\CookieManager;
 use Helpers\ResponseHelper;
 use Helpers\JWTHelper;
-use Helpers\HeaderHelper;
+
+use Validators\EmployeesValidator;
 
 use Models\EmployeesModel;
 
@@ -12,90 +13,119 @@ class EmployeesController
 {
     private $pdo;
     private $jwt;
-    private $employees_model;
-    private $cookie_manager;
+    private $employeesModel;
+    private $cookieManager;
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
         $this->jwt = new JWTHelper();
-        $this->cookie_manager = new CookieManager();
-        $this->employees_model = new EmployeesModel($this->pdo);
-
-        HeaderHelper::setResponseHeaders();
+        $this->cookieManager = new CookieManager();
+        $this->employeesModel = new EmployeesModel($this->pdo);
     }
 
-    public function getAllEmployees()
+    /**
+     * Retrieves all employees from the database and sends a success response with the data.
+     *
+     * @throws RuntimeException If there is an error during the retrieval process.
+     * @return void
+     */
+    public function getAllEmployees(): void
     {
-        $lists_of_employees = $this->employees_model->getAllEmployees();
+        try {
+            $employees = $this->employeesModel->getAllEmployees();
 
-        if (empty($lists_of_employees)) {
-            ResponseHelper::sendErrorResponse('No employees found', 404);
-            return;
+            if (!$employees) {
+                ResponseHelper::sendErrorResponse('No employees found', 404);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse($employees, 'Employees retrieved successfully', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
-
-        ResponseHelper::sendSuccessResponse($lists_of_employees, 'Employees fetched successfully', 200);
     }
 
-    public function getEmployeeById()
+    /**
+     * Retrieves a specific employee's data based on the authenticated user's JWT token.
+     *
+     * @throws RuntimeException If an error occurs during the retrieval process.
+     * @return void
+     */
+    public function getEmployeeById(): void
     {
+        try {
+            $cookieHeader = $this->cookieManager->validateCookiePressence();
+            $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
+            $customerID = $this->jwt->decodeJWTData($response['token'])->id;
 
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $customer_id = $this->jwt->decodeJWTData($token)->id;
+            $response = $this->employeesModel->getEmployeeById((int) $customerID);
 
-        $response = $this->employees_model->getEmployeeById($customer_id);
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('No Account Found', 404);
+                exit;
+            }
 
-        if (empty($response)) {
-            ResponseHelper::sendDatabaseErrorResponse('Failed to fetch account');
-            return;
+            ResponseHelper::sendSuccessResponse($response, 'Successfully retrieved account', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
-
-        ResponseHelper::sendSuccessResponse($response, 'Successfully fetched account');
     }
 
-    public function addNewEmployee($payload)
+    /**
+     * Adds a new employee to the database based on the provided payload.
+     *
+     * @param array $payload The data for the new employee.
+     * @throws RuntimeException If there is an error during the addition process.
+     * @throws InvalidArgumentException If the payload is invalid.
+     * @return void
+     */
+    public function addNewEmployee(array $payload): void
     {
+        try {
+            EmployeesValidator::validateAddEmployeeRequest($payload);
 
-        if (!is_array($payload) || empty($payload)) {
-            ResponseHelper::sendErrorResponse("Invalid payload or payload is empty");
-            return;
+            $response = $this->employeesModel->addNewEmployee($payload);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to add new employee', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'Employee added successfully', 201);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
-
-        $response = $this->employees_model->addNewEmployee($payload);
-
-        if (is_string($response)) {
-            ResponseHelper::sendDatabaseErrorResponse($response, 409);
-            return;
-        }
-
-        if (!$response) {
-            ResponseHelper::sendErrorResponse('Failed to add new employee', 500);
-            return;
-        }
-
-        ResponseHelper::sendSuccessResponse([], 'Employee added successfully', 201);
     }
 
-    public function editEmployee($param, $payload)
+    /**
+     * Edits an employee based on the provided parameters and payload.
+     *
+     * @param array $parameter The parameters for editing the employee.
+     * @param array $payload The data to update the employee with.
+     * @throws RuntimeException If an error occurs during the editing process.
+     * @throws InvalidArgumentException If the provided arguments are invalid.
+     * @return void
+     */
+    public function editEmployee(array $parameter, array $payload): void
     {
+        try {
+            EmployeesValidator::validateEditEmployeeRequest($parameter, $payload);
 
-        if (!is_array($payload) || empty($payload) || !is_array($param) || empty($param) || !isset($param['id'])) {
-            ResponseHelper::sendErrorResponse("Invalid payload and paramter or payload and parameter is empty");
-            return;
+            $response = $this->employeesModel->editEmployee((int) $parameter['id'], $payload);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to edit employee', 400);
+                return;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'Employee edited successfully', 201);
+        } catch (RuntimeException $e) {
+            throw new RuntimeException($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
-
-        $response = $this->employees_model->editEmployee($param['id'], $payload);
-
-        if (is_string($response)) {
-            ResponseHelper::sendErrorResponse($response);
-            return;
-        }
-
-        if (!$response) {
-            ResponseHelper::sendErrorResponse('Failed to edit employee');
-            return;
-        }
-
-        ResponseHelper::sendSuccessResponse([], 'Employee edited successfully', 200);
     }
 }

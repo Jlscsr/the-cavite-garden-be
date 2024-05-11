@@ -6,139 +6,148 @@ use Helpers\ResponseHelper;
 
 use Models\ProductsModel;
 
+use PDO;
+
+use RuntimeException;
+
 class CartModel
 {
     private $pdo;
-    private $plant_model;
+    private $plantModel;
+
+    private const CART_TABLE = "cart_tb";
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
-        $this->plant_model = new ProductsModel($pdo);
+        $this->plantModel = new ProductsModel($pdo);
     }
 
-    public function getCostumerCartProducts($costumer_id)
+    /**
+     * Retrieves the products in the customer's cart.
+     *
+     * @param int $costumerID The ID of the customer.
+     * @return array An array of cart products, each containing the product information.
+     * @throws PDOException If there is an error executing the database query.
+     */
+    public function getCostumerCartProducts(int $costumerID): array
     {
-
-        if (!is_integer($costumer_id) || empty($costumer_id)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
-            return;
-        }
-
-        $query = "SELECT * FROM cart_tb WHERE customer_id = :customer_id";
+        $query = "SELECT * FROM " . self::CART_TABLE . " WHERE customerID = :customerID";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':customer_id', $costumer_id, PDO::PARAM_STR);
+        $statement->bindValue(':customerID', $costumerID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            $product_ids = [];
-            $products_lists = [];
-            $cart_products = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-            foreach ($cart_products as $cart_product) {
-                $product_ids[] = $cart_product['product_id'];
+            $productIDs = [];
+            $productLists = [];
+            $cartProducts = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($cartProducts as $cartProduct) {
+                $productIDs[] = $cartProduct['productID'];
             }
 
-            foreach ($product_ids as $product_id) {
-                $product = $this->plant_model->getProductByID($product_id);
-                $products_lists[] = $product;
+            foreach ($productIDs as $productID) {
+                $product = $this->plantModel->getProductByID((int) $productID);
+                $productLists[] = $product;
             }
 
             $products = [];
-            foreach ($cart_products as $cart_product) {
-                $cart_product['product_info'] = $products_lists[array_search($cart_product['product_id'], array_column($products_lists, 'id'))];
-                $products[] = $cart_product;
+            foreach ($cartProducts as $cartProduct) {
+                $cartProduct['productInfo'] = $productLists[array_search($cartProduct['productID'], array_column($productLists, 'id'))];
+                $products[] = $cartProduct;
             }
-            $cart_products = $products;
-            return $cart_products;
+            $cartProducts = $products;
+            return $cartProducts;
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
-    public function addProductToCart($data)
+    /**
+     * Adds a product to the customer's cart.
+     *
+     * @param array $payload An array containing the following keys:
+     *                      - customerID: The ID of the customer.
+     *                      - productID: The ID of the product.
+     *                      - productQuantity: The quantity of the product.
+     *                      - productBasePrice: The base price of the product.
+     * @throws RuntimeException If there is an error executing the SQL statements.
+     * @return bool Returns true if the product was successfully added to the cart, false otherwise.
+     */
+    public function addProductToCart(array $payload): bool
     {
+        $customerID = $payload['customerID'];
+        $productID = $payload['productID'];
+        $productQuantity = $payload['productQuantity'];
+        $productBasePrice = $payload['productBasePrice'];
 
-        if (!is_array($data) || empty($data)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
-            return;
-        }
+        $query = "SELECT * FROM " . self::CART_TABLE . " WHERE customerID = :customerID AND productID = :productID";
 
-        $customer_id = $data['customer_id'];
-        $product_id = $data['product_id'];
-        $product_quantity = $data['product_quantity'];
-        $product_base_price = $data['product_base_price'];
+        $statement = $this->pdo->prepare($query);
 
-        $get_existing_product_query = "SELECT * FROM cart_tb WHERE customer_id = :customer_id AND product_id = :product_id";
-
-        $statement = $this->pdo->prepare($get_existing_product_query);
-        $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
-        $statement->bindValue(':product_id', $product_id, PDO::PARAM_STR);
+        $statement->bindValue(':customerID', $customerID, PDO::PARAM_INT);
+        $statement->bindValue(':productID', $productID, PDO::PARAM_INT);
 
         try {
             $statement->execute();
 
             if ($statement->rowCount() > 0) {
-                $query = "UPDATE cart_tb SET quantity = quantity + :product_quantity, price = price + (:quantity * :product_base_price) WHERE customer_id = :customer_id AND product_id = :product_id";
-                $statement = $this->pdo->prepare($query);
-                $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
-                $statement->bindValue(':product_id', $product_id, PDO::PARAM_STR);
-                $statement->bindValue(':product_quantity', $product_quantity, PDO::PARAM_INT);
-                $statement->bindValue(':quantity', $product_quantity, PDO::PARAM_INT);
-                $statement->bindValue(':product_base_price', $product_base_price, PDO::PARAM_INT);
 
-                try {
-                    $statement->execute();
-                    return $statement->rowCount() > 0;
-                } catch (PDOException $e) {
-                    ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-                    return false;
-                }
+                $query = "UPDATE " . self::CART_TABLE . " SET productQuantity = productQuantity + :productQuantity, totalPrice = totalPrice + (:quantity * :productBasePrice) WHERE customerID = :customerID AND productID = :productID";
+                $statement = $this->pdo->prepare($query);
+
+                $statement->bindValue(':customerID', $customerID, PDO::PARAM_INT);
+                $statement->bindValue(':productID', $productID, PDO::PARAM_INT);
+                $statement->bindValue(':productQuantity', $productQuantity, PDO::PARAM_INT);
+                $statement->bindValue(':quantity', $productQuantity, PDO::PARAM_INT);
+                $statement->bindValue(':productBasePrice', $productBasePrice, PDO::PARAM_INT);
+
+                $statement->execute();
+
+                return $statement->rowCount() > 0;
             } else {
-                $total_price = $product_base_price * $product_quantity;
-                $query = "INSERT INTO cart_tb (customer_id, product_id, quantity, price) VALUES (:customer_id, :product_id, :product_quantity, :total_price)";
-                $statement = $this->pdo->prepare($query);
-                $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
-                $statement->bindValue(':product_id', $product_id, PDO::PARAM_STR);
-                $statement->bindValue(':product_quantity', $product_quantity, PDO::PARAM_INT);
-                $statement->bindValue(':total_price', $total_price, PDO::PARAM_INT);
+                $totalPrice = $productBasePrice * $productQuantity;
 
-                try {
-                    $statement->execute();
-                    return $statement->rowCount() > 0;
-                } catch (PDOException $e) {
-                    echo "3rd Catch";
-                    ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-                    return false;
-                }
+                $query = "INSERT INTO " . self::CART_TABLE . " (customerID, productID, productQuantity, totalPrice) VALUES (:customerID, :productID, :productQuantity, :totalPrice)";
+                $statement = $this->pdo->prepare($query);
+
+                $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+                $statement->bindValue(':productID', $productID, PDO::PARAM_STR);
+                $statement->bindValue(':productQuantity', $productQuantity, PDO::PARAM_INT);
+                $statement->bindValue(':totalPrice', $totalPrice, PDO::PARAM_INT);
+
+                $statement->execute();
+
+                return $statement->rowCount() > 0;
             }
         } catch (PDOException $e) {
-            echo "1st Catch";
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            return false;
+            throw new RuntimeException($e->getMessage(), 500);
         }
     }
 
-
-
-    public function deleteProductFromCart($customer_id, $cart_product_id)
+    /**
+     * Deletes a product from the customer's cart.
+     *
+     * @param int $customerID The ID of the customer.
+     * @param int $cartProductID The ID of the cart product.
+     * @throws RuntimeException If there is an error executing the SQL statements.
+     * @return bool Returns true if the product was successfully deleted, false otherwise.
+     */
+    public function deleteProductFromCart(int $customerID, int $cartProductID): bool
     {
-        if (!is_integer($customer_id) || empty($customer_id) || !is_integer($cart_product_id) || empty($cart_product_id)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
-            return;
-        }
-
-        $query = "DELETE FROM cart_tb WHERE id = :id AND customer_id = :customer_id";
+        $query = "DELETE FROM " . self::CART_TABLE . " WHERE id = :id AND customerID = :customerID";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
-        $statement->bindValue(':id', $cart_product_id, PDO::PARAM_STR);
+
+        $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+        $statement->bindValue(':id', $cartProductID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->rowCount() === 0;
+
+            return $statement->rowCount() > 0;
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
-            return false;
+            throw new RuntimeException($e->getMessage(), 500);
         }
     }
 }

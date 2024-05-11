@@ -82,7 +82,7 @@ class CustomersModel
 
     public function getCustomerByEmail($customerEmail)
     {
-        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE customerEmail = :customerEmail LIMIT 1";
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :customerEmail LIMIT 1";
         $statement = $this->pdo->prepare($query);
 
         $statement->bindValue(':customerEmail', $customerEmail, PDO::PARAM_STR);
@@ -96,15 +96,11 @@ class CustomersModel
         }
     }
 
-    public function getCustomerById($customer_id)
+    public function getCustomerById($customerID)
     {
-        if (!is_integer($customer_id)) {
-            return [];
-        }
-
-        $query = "SELECT id, first_name, last_name, phone_number, birthdate, email FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customer_id";
+        $query = "SELECT id, firstName, lastName, phoneNumber, birthdate, email FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customerID";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':customer_id', $customer_id, PDO::PARAM_STR);
+        $statement->bindValue(':customer_id', $customerID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
@@ -137,7 +133,7 @@ class CustomersModel
         $customerEmail = $payload['customerEmail'];
         $password = $payload['password'];
 
-        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (firstName, lastName, phoneNumber, birthdate, customerEmail, password) VALUES (:firstName, :lastName, :phoneNumber, :birthdate, :customerEmail, :password)";
+        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (firstName, lastName, phoneNumber, birthdate, email, password) VALUES (:firstName, :lastName, :phoneNumber, :birthdate, :customerEmail, :password)";
 
         $statement = $this->pdo->prepare($query);
 

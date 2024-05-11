@@ -19,7 +19,7 @@ class HelperModel
     public function checkForDuplicateEmail($tableName, $email)
     {
 
-        $query = "SELECT COUNT(*) AS emailCount FROM $tableName WHERE customerEmail = :email";
+        $query = "SELECT COUNT(*) AS emailCount FROM $tableName WHERE email = :email";
         $statement = $this->pdo->prepare($query);
 
         $statement->bindValue(':email', $email, PDO::PARAM_STR);

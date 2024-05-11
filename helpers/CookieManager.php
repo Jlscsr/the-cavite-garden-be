@@ -2,8 +2,6 @@
 
 namespace Helpers;
 
-use RuntimeException;
-
 class CookieManager
 {
     private $isSecure;
@@ -24,7 +22,7 @@ class CookieManager
      * @param int $expiryDate The expiry date of the cookie in Unix timestamp format.
      * @return void
      */
-    public function setCookiHeader($token, $expiryDate)
+    public function setCookiHeader(string $token, int $expiryDate): void
     {
         self::resetCookieHeader();
         setcookie($this->cookieName, $token, $expiryDate, '/', '', $this->isSecure, $this->isHttpOnly);
@@ -40,22 +38,19 @@ class CookieManager
      *
      * @return void
      */
-    public function resetCookieHeader()
+    public function resetCookieHeader(): void
     {
         setcookie($this->cookieName, '', time() - 3600, '/', '', $this->isSecure, $this->isHttpOnly);
     }
 
+
     /**
-     * Extracts the access token from the cookie header.
+     * Extracts the access token from the provided cookie header.
      *
-     * This function retrieves all the headers using the `getallheaders()` function and
-     * validates the presence of the cookie using the `validateCookiePressence()` method.
-     * It then extracts the access token from the cookie header by removing the prefix
-     * "tcg_access_token=". The extracted token is returned.
-     *
-     * @return string The access token extracted from the cookie header.
+     * @param string $cookieHeader The cookie header containing the access token.
+     * @return array The extracted access token or an error message if the token is missing.
      */
-    public function extractAccessTokenFromCookieHeader($cookieHeader)
+    public function extractAccessTokenFromCookieHeader(string $cookieHeader): array
     {
         $token = $cookieHeader;
 
@@ -69,17 +64,17 @@ class CookieManager
         return ['token' => $token];
     }
 
+
     /**
-     * Validates the presence of the cookie in the headers.
+     * Validates the presence of a cookie in the request headers.
      *
-     * This function retrieves all the headers using `getallheaders()`,
-     * checks if the 'Cookie' header is set, and sends an error response
-     * with a 400 status code if the cookie header is missing.
+     * This function checks if the 'Cookie' header is present in the request headers.
+     * If the header is missing, it returns an array with 'status' set to 'failed' and 'message' set to 'Cookie header is missing'.
+     * If the header is present, it returns the value of the 'Cookie' header.
      *
-     * @throws void
-     * @return void
+     * @return array|string Returns an array with 'status' and 'message' if the header is missing, otherwise returns the value of the 'Cookie' header.
      */
-    public function validateCookiePressence()
+    public function validateCookiePressence(): array | string
     {
         $headers = getallheaders();
 

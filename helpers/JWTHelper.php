@@ -11,7 +11,6 @@ use Firebase\JWT\Key;
 use RuntimeException;
 use UnexpectedValueException;
 
-
 class JWTHelper
 {
     private $secret_key;
@@ -24,38 +23,38 @@ class JWTHelper
     }
 
     /**
-     * Encodes the given data into a JSON Web Token (JWT) using the specified secret key and hash algorithm.
+     * Encodes the given data into a JSON Web Token (JWT) string.
      *
-     * @param mixed $data The data to be encoded into a JWT.
-     * @return string The encoded JWT.
+     * @param array $data The data to be encoded.
+     * @return string The encoded JWT string.
      */
-    public function encodeDataToJWT($data)
+    public function encodeDataToJWT(array $data): string
     {
         $token = JWT::encode($data, $this->secret_key, $this->hash_algorithm);
         return $token;
     }
 
+
     /**
-     * Decodes the given JWT token and returns the decoded data.
+     * Decodes a JSON Web Token (JWT) and returns its data as an array.
      *
-     * @param string $token The JWT token to be decoded.
-     * @throws Exception If there is an error decoding the token.
-     * @return mixed The decoded data from the JWT token.
+     * @param string $token The JWT to decode.
+     * @return array The decoded JWT data.
      */
-    public function decodeJWTData($token)
+    public function decodeJWTData(string $token): object
     {
         $data = JWT::decode($token, new Key($this->secret_key, $this->hash_algorithm));
         return $data;
     }
 
     /**
-     * Validates the authenticity and expiration of the JWT token.
+     * Validates a JSON Web Token (JWT) and checks if it is still valid.
      *
-     * @param mixed $token The JWT token to be validated.
-     * @throws \Firebase\JWT\SignatureInvalidException If the token signature is invalid.
-     * @return bool Returns true if the token is valid, false otherwise.
+     * @param string $token The JWT to be validated.
+     * @return bool Returns true if the token is valid and not expired, false otherwise.
+     * @throws RuntimeException If the token signature is invalid or if an unexpected value is encountered.
      */
-    public function validateToken($token)
+    public function validateToken(string $token): bool
     {
         try {
             $data = $this->decodeJWTData($token);
