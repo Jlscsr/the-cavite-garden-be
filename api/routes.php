@@ -52,7 +52,7 @@ class Route
                 "middleware" => true,
                 "requiredRole" => "customer"
             ],
-            "api/customer/info" => [
+            "api/customer" => [
                 "handler" => "CustomersController@getCustomerById",
                 "middleware" => true,
                 "requiredRole" => "both"

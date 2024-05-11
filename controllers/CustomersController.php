@@ -2,74 +2,115 @@
 
 use Helpers\JWTHelper;
 use Helpers\ResponseHelper;
-use Helpers\HeaderHelper;
 use Helpers\CookieManager;
+
+use Validators\CustomersValidator;
 
 use Models\CustomersModel;
 
 class CustomersController
 {
     private $jwt;
-    private $customer_model;
-    private $cookie_manager;
+    private $customerModel;
+    private $cookieManager;
 
     public function __construct($pdo)
     {
         $this->jwt = new JWTHelper();
-        $this->customer_model = new CustomersModel($pdo);
-        $this->cookie_manager = new CookieManager();
-
-        HeaderHelper::setResponseHeaders();
+        $this->customerModel = new CustomersModel($pdo);
+        $this->cookieManager = new CookieManager();
     }
 
+    /**
+     * Retrieves all customers from the database.
+     *
+     * @throws RuntimeException If an error occurs while fetching customers.
+     * @return void
+     */
     public function getAllCustomers()
     {
+        try {
+            $customers = $this->customerModel->getAllCustomers();
 
-        $lists_of_customers = $this->customer_model->getAllCustomers();
+            if (!$customers) {
+                ResponseHelper::sendErrorResponse('No customers found', 404);
+                exit;
+            }
 
-        if (empty($lists_of_customers)) {
-            ResponseHelper::sendSuccessResponse([], 'No customers found', 200);
-            return;
+            ResponseHelper::sendSuccessResponse($customers, 'Customers fetched successfully', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
-
-        ResponseHelper::sendSuccessResponse($lists_of_customers, 'Customers fetched successfully', 200);
     }
 
-    public function getCustomerById()
+    /**
+     * Retrieves the customer data by the customer ID obtained from the token.
+     *
+     * @throws RuntimeException if there is an error retrieving the customer data
+     * @return void
+     */
+    public function getCustomerById(): void
     {
+        try {
+            $customerID = $this->getCostumerIDFromToken();
 
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
+            $response = $this->customerModel->getCustomerById((int) $customerID);
 
-        $decoded_token = $this->jwt->decodeJWTData($token);
-        $customer_id = $decoded_token->id;
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to fetch account', 404);
+                exit;
+            }
 
-        $response = $this->customer_model->getCustomerById($customer_id);
-
-        if (empty($response)) {
-            ResponseHelper::sendDatabaseErrorResponse('Failed to fetch account');
-            return;
+            ResponseHelper::sendSuccessResponse($response, 'Successfully fetched account');
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
-
-        ResponseHelper::sendSuccessResponse($response, 'Successfully fetched account');
     }
 
-    public function addNewUserAddress($data)
+    /**
+     * Adds a new user address.
+     *
+     * @param array $payload The payload containing the address information.
+     * @throws RuntimeException If there is an error adding the address.
+     * @throws InvalidArgumentException If the payload is invalid.
+     * @return void
+     */
+    public function addNewUserAddress(array $payload): void
     {
-        if (!is_array($data) || empty($data)) {
-            ResponseHelper::sendErrorResponse("Invalid data or data is empty", 400);
-            return;
+        try {
+            CustomersValidator::validateAddCustomerAddress($payload);
+
+            $customerID = $this->getCostumerIDFromToken();
+
+            $response = $this->customerModel->addNewUserAddress($customerID, $payload);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to add address', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'Address added successfully', 201);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
+    }
 
-        $token = $this->cookie_manager->extractAccessTokenFromCookieHeader();
-        $customer_id = $this->jwt->decodeJWTData($token)->id;
+    /**
+     * Retrieves the customer ID from the token.
+     *
+     * This function retrieves the customer ID from the token by validating the cookie presence,
+     * extracting the access token from the cookie header, and decoding the JWT data.
+     *
+     * @return int The customer ID extracted from the token.
+     */
+    private function getCostumerIDFromToken(): int
+    {
+        $cookieHeader = $this->cookieManager->validateCookiePressence();
+        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
+        $decodedToken = $this->jwt->decodeJWTData($response['token']);
 
-        $response = $this->customer_model->addNewUserAddress($customer_id, $data);
-
-        if (!$response) {
-            ResponseHelper::sendErrorResponse($response, 500);
-            return;
-        }
-
-        ResponseHelper::sendSuccessResponse(null, 'Address added successfully', 201);
+        return $decodedToken->id;
     }
 }
