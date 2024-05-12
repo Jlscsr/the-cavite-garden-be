@@ -5,12 +5,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Helpers\\": "./helpers",
-            "Models\\": "./models",
-            "Builders\\": "./builders",
-            "Interfaces\\": "./interfaces",
-            "Validators\\": "./validators",
-            "Middlewares\\": "./middlewares"
+            "App\\": "./app",
+            "Config\\": "./config"
         }
     }
 }
