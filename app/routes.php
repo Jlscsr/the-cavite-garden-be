@@ -162,6 +162,12 @@ class Routes
         ];
     }
 
+    /**
+     * Get the route based on the URL request and handle dynamic parameters.
+     *
+     * @param string $urlRequest The URL request to match against routes
+     * @return ?array The route information or null if no match is found
+     */
     public function getRoute(string $urlRequest): ?array
     {
         foreach ($this->routes as $route => $handler) {

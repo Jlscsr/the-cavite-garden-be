@@ -22,6 +22,11 @@ class Router
         $this->route = new Routes();
     }
 
+    /**
+     * Runs the application by processing the incoming request.
+     *
+     * @return void
+     */
     public function run(): void
     {
         HeaderHelper::SendPreflightHeaders();
@@ -38,8 +43,16 @@ class Router
         $this->invokeControllerMethod($controllerName, $methodName, $requestMethod, $handler);
     }
 
+    /**
+     * Handles the middleware for the given handler.
+     *
+     * @param array $handler The handler containing the middleware information.
+     * @throws RuntimeException If the request validation fails.
+     * @return void
+     */
     private function handleMiddleware(array $handler): void
     {
+        // Check if middleware is enabled on the handler
         if (isset($handler['middleware']) && !empty($handler['middleware']) && $handler['middleware']) {
             try {
                 $middleware = new BaseMiddleware($handler['requiredRole']);
@@ -51,12 +64,28 @@ class Router
         }
     }
 
+    /**
+     * Parses the handler to extract controller name and method.
+     *
+     * @param array $handler The handler containing the controller and method information.
+     * @return array An array containing the controller name and method name.
+     */
     private function parseHandler(array  $handler): array
     {
         $handlerValue = is_array($handler['handler']) ? $handler['handler']['handler'] : $handler['handler'];
         return explode('@', $handlerValue);
     }
 
+    /**
+     * Executes the specified method on the given controller based on the request method.
+     *
+     * @param string $controllerName The name of the controller class.
+     * @param string $methodName The name of the method to be executed.
+     * @param string $requestMethod The HTTP request method used for the request.
+     * @param array $handler The handler containing method parameters and other information.
+     * @throws RuntimeException If an error occurs during method execution.
+     * @return void
+     */
     private function invokeControllerMethod(string $controllerName, string $methodName, string $requestMethod, array $handler): void
     {
         require_once dirname(__DIR__) . '/app/' . 'controllers/' . $controllerName . '.php';
@@ -71,7 +100,7 @@ class Router
             case 'POST':
                 $payload = json_decode(file_get_contents('php://input'), true);
                 if ($payload === null && $_GET['url'] !== 'api/auth/logout') {
-                    ResponseHelper::sendErrorResponse("Invalid payload or payload is empty", 400);
+                    ResponseHelper::sendErrorResponse("Invalid payload format or payload is empty", 400);
                     exit;
                 }
                 $controller->$methodName($payload);

@@ -61,7 +61,7 @@ class AuthenticationController
             $response = $this->customerModel->addNewCustomer($payload);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse('Failed to register new customer', 400);
+                ResponseHelper::sendErrorResponse('Failed to register new account', 400);
                 exit;
             }
 
@@ -137,6 +137,11 @@ class AuthenticationController
     {
         try {
             $cookieHeader = $this->cookieManager->validateCookiePressence();
+
+            if (is_array($cookieHeader) && isset($cookieHeader['status']) && ($cookieHeader['status'] === 'failed')) {
+                ResponseHelper::sendUnauthorizedResponse($cookieHeader['message']);
+                exit;
+            }
 
             $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
 

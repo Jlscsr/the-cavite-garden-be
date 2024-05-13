@@ -15,7 +15,6 @@ class ResponseHelper
      */
     public static function sendJsonResponse(array $response, int $statusCode): void
     {
-
         http_response_code($statusCode);
         echo json_encode($response);
     }

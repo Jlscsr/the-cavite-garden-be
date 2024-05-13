@@ -62,6 +62,7 @@ class BaseMiddleware implements MiddlewareInterface
 
             if (is_array($response) && isset($response['status']) && ($response['status'] === 'failed')) {
                 throw new RuntimeException($response['message']);
+                exit;
             }
 
             $this->validateToken($response);
