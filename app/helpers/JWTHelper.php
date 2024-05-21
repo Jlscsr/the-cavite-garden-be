@@ -8,8 +8,6 @@ use Firebase\JWT\Key;
 use RuntimeException;
 use UnexpectedValueException;
 
-use Config\EnvironmentLoader;
-
 class JWTHelper
 {
     private $secret_key;
@@ -17,8 +15,6 @@ class JWTHelper
 
     public function __construct()
     {
-        EnvironmentLoader::load();
-
         $this->secret_key = $_ENV['JWT_SECRET_KEY'];
         $this->hash_algorithm = $_ENV['JWT_HASH_ALGORITHM'];
     }
@@ -67,7 +63,7 @@ class JWTHelper
 
             return true;
         } catch (\Firebase\JWT\SignatureInvalidException $e) {
-            throw new RuntimeException('Invalid Token Signature');
+            throw new RuntimeException($e->getMessage());
         } catch (UnexpectedValueException $e) {
             throw new RuntimeException($e->getMessage());
         }

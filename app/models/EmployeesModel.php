@@ -96,7 +96,7 @@ class EmployeesModel
      *               - modifiedAt: The date the employee was last modified.
      * @throws RuntimeException If there is an error executing the database query.
      */
-    public function getEmployeeById(int $employeeID): array
+    public function getEmployeeById(int $employeeID): array | bool
     {
         $query = "
             SELECT 

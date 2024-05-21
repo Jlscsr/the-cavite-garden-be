@@ -59,7 +59,7 @@ class CookieManager
             return ['status' => 'failed', 'message' => 'Access Token is Missing. Please Login Again'];
         }
 
-        $token = str_replace("tcg_access_token=", "", $token);
+        $token = str_replace("tcg_access_token=", "", $token) ?? '';
 
         return ['token' => $token];
     }

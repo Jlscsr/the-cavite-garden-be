@@ -9,6 +9,11 @@ class Routes
     public function __construct()
     {
         $this->routes = [
+            "api/user" => [
+                "handler" => "AuthenticationController@getUserInfo",
+                "middleware" => true,
+                "requiredRole" => "both"
+            ],
             "api/subcategory/delete/:id" => [
                 "handler" => "SubCategoriesController@deleteSubCategory",
                 "middleware" => true,
@@ -122,7 +127,7 @@ class Routes
             ],
             "api/products/category/:id" => [
                 "handler" => "ProductsController@getAllProductsByCategory",
-                "middleware" => true,
+                "middleware" => false,
                 "requiredRole" => "both"
             ],
             "api/product/delete/:id" => [

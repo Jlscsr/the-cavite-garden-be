@@ -53,7 +53,7 @@ class AuthenticationValidator extends RequestValidator
     {
         self::validatePOSTRequest($payload);
 
-        if (!isset($payload['customerEmail']) || !isset($payload['password'])) {
+        if (!isset($payload['email']) || !isset($payload['password'])) {
             throw new InvalidArgumentException('Email or password is missing in the payload');
             exit;
         }

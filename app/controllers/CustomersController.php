@@ -59,11 +59,11 @@ class CustomersController
             $response = $this->customerModel->getCustomerById($customerID);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse('Failed to fetch account', 404);
+                ResponseHelper::sendErrorResponse('Failed to fetch customer account', 404);
                 exit;
             }
 
-            ResponseHelper::sendSuccessResponse($response, 'Successfully fetched account');
+            ResponseHelper::sendSuccessResponse($response, 'Successfully fetched customer account');
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }

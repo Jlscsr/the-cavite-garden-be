@@ -85,7 +85,7 @@ class AuthenticationController
         try {
             AuthenticationValidator::validateLoginPayload($payload);
 
-            $email = filter_var($payload['customerEmail'], FILTER_SANITIZE_EMAIL);
+            $email = filter_var($payload['email'], FILTER_SANITIZE_EMAIL);
             $password = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
 
             $userAccount = $this->customerModel->getCustomerByEmail($email) ?: $this->employeeModel->getEmployeeByEmail($email);
@@ -103,14 +103,33 @@ class AuthenticationController
                 'expiry_date' => $expiryDate
             ];
 
+            unset($userAccount['password']);
+
             $token = $this->jwt->encodeDataToJWT($tokenData);
 
             $this->cookieManager->setCookiHeader($token, $expiryDate);
 
-            ResponseHelper::sendSuccessResponse(['role' => $userAccount['role']], 'Logged In success', 201);
+            ResponseHelper::sendSuccessResponse($userAccount, 'Logged In success', 201);
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage());
         } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage());
+        }
+    }
+
+    public function getUserInfo(): void
+    {
+        try {
+            $userID = $this->getCostumerIDFromToken();
+            $userAccount = $this->customerModel->getCustomerById($userID) ?: $this->employeeModel->getEmployeeById($userID);
+
+            if (!$userAccount) {
+                ResponseHelper::sendUnauthorizedResponse('Account not found');
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse($userAccount, 'User account fetched successfully', 200);
+        } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage());
         }
     }
@@ -143,7 +162,7 @@ class AuthenticationController
                 exit;
             }
 
-            $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
+            $response = $this->cookieManager->extractAccessTokenFromCookieHeader(trim($cookieHeader));
 
             if (!$this->jwt->validateToken($response['token'])) {
                 $this->cookieManager->resetCookieHeader();
@@ -155,5 +174,14 @@ class AuthenticationController
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage());
         }
+    }
+
+    private function getCostumerIDFromToken(): int
+    {
+        $cookieHeader = $this->cookieManager->validateCookiePressence();
+        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
+        $decodedToken = $this->jwt->decodeJWTData($response['token']);
+
+        return $decodedToken->id;
     }
 }

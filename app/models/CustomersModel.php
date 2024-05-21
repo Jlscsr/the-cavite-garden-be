@@ -79,9 +79,9 @@ class CustomersModel
      * @throws RuntimeException If an error occurs while fetching the customer.
      * @return array An associative array representing the customer data.
      */
-    public function getCustomerByEmail(string $customerEmail): array
+    public function getCustomerByEmail(string $customerEmail): array | bool
     {
-        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :customerEmail LIMIT 1";
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE email = :customerEmail";
         $statement = $this->pdo->prepare($query);
 
         $statement->bindValue(':customerEmail', $customerEmail, PDO::PARAM_STR);
@@ -102,9 +102,9 @@ class CustomersModel
      * @throws RuntimeException If an error occurs while fetching the customer.
      * @return array An associative array representing the customer data, including the ID, first name, last name, phone number, birthdate, and email.
      */
-    public function getCustomerById(int $customerID): array
+    public function getCustomerById(int $customerID): array | bool
     {
-        $query = "SELECT id, firstName, lastName, phoneNumber, birthdate, email FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customerID";
+        $query = "SELECT id, firstName, lastName, phoneNumber, birthdate, email, role FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customerID";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
 
@@ -112,12 +112,13 @@ class CustomersModel
             $statement->execute();
             $customer = $statement->fetch(PDO::FETCH_ASSOC);
 
-            $customerID = (int) $customer['id'];
+            if ($customer) {
+                $customerID = (int) $customer['id'];
 
-            $shippingAddress = $this->getCustomerAddressByCustomerId($customerID);
+                $shippingAddress = $this->getCustomerAddressByCustomerId($customerID);
 
-            $customer['shippingAddresses'] = $shippingAddress || [];
-
+                $customer['shippingAddresses'] = $shippingAddress ? $shippingAddress : [];
+            }
             return $customer;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());

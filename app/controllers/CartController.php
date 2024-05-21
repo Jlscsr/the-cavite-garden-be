@@ -41,7 +41,7 @@ class CartController
             $response = $this->cartModel->getCostumerCartProducts($customerID);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse('No products found in cart', 404);
+                ResponseHelper::sendSuccessResponse([], 'No products found in cart');
                 exit;
             }
 
