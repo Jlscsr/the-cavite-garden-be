@@ -34,7 +34,7 @@ class AuthenticationValidator extends RequestValidator
     {
         self::validatePOSTRequest($payload);
         self::checkRequiredFields($payload, self::$requiredFields);
-        self::checkFieldsPattern($payload, self::$requiredFields);
+        // self::checkFieldsPattern($payload, self::$requiredFields);
     }
 
     /**
