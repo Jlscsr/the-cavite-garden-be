@@ -8,7 +8,7 @@ use App\Validators\RequestValidator;
 
 class TransactionsValidator extends RequestValidator
 {
-    static $requiredParameters = ['status'];
+    static $requiredParameters = ['status', 'customerID'];
     static $requiredFields = [
         'deliveryMethod' => '/^(delivery|pick-up)$/',
         'paymentMethod' => '/^(pay-online|pay-over-the-counter)$/',
@@ -50,7 +50,7 @@ class TransactionsValidator extends RequestValidator
     {
         self::validatePOSTRequest($payload);
         self::checkRequiredFields($payload, self::$requiredFields);
-        self::checkFieldsPattern($payload, self::$requiredFields);
+        // self::checkFieldsPattern($payload, self::$requiredFields);
     }
 
     /**
@@ -70,7 +70,7 @@ class TransactionsValidator extends RequestValidator
     public static function validateEditTransactionRequest(array $parameter, array $payload): void
     {
         self::validatePUTRequest($parameter, $payload);
-        self::checkRequiredFields($payload, self::$requiredFields);
+        // self::checkRequiredFields($payload, self::$requiredFields);
         self::checkFieldsPattern($payload, self::$requiredFields);
     }
 }

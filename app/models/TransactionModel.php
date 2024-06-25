@@ -91,9 +91,54 @@ class TransactionModel
         }
     }
 
-    public function getAllTransactionsByCustomerId()
+    public function getTransactionByCustomerID($customerID)
     {
         //
+        $query = "SELECT t.*, c.firstName, c.lastName FROM " . self::TRANSACTION_TABLE . " t JOIN customers_tb c ON t.customerID = c.id WHERE t.customerID = :customerID";
+
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':customerID', $customerID, PDO::PARAM_INT);
+
+        try {
+            $statement->execute();
+
+            $transactionData = [];
+            $productTransactionMap = [];
+
+            while ($transactionValue = $statement->fetch(PDO::FETCH_ASSOC)) {
+                $transactionID = $transactionValue['id'];
+                $transactionData[] = $transactionValue;
+                $productTransactionMap[$transactionID] = [];
+            }
+
+            $query = "SELECT productID, transactionID, productQuantity FROM " . self::PRODUCT_TRANSACTION_TABLE . " WHERE transactionID = :transactionID";
+            $statement = $this->pdo->prepare($query);
+
+            foreach ($transactionData as $key => $transactionValue) {
+                $transactionID = $transactionValue['id'];
+                $statement->bindValue(':transactionID', $transactionID, PDO::PARAM_INT);
+                $statement->execute();
+
+                $products = [];
+
+                while ($productTransactionValue = $statement->fetch(PDO::FETCH_ASSOC)) {
+                    $response = $this->plantModel->getProductByID((int) $productTransactionValue['productID']);
+
+                    if (!$response) {
+                        throw new RuntimeException("Product not found.");
+                    }
+
+                    $response['productQuantity'] = $productTransactionValue['productQuantity'];
+                    $products[] = $response;
+                }
+                $transactionValue['productsPurchased'] = $products;
+                $transactionData[$key] = $transactionValue;
+            }
+
+            return $transactionData;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage(), 500);
+        }
     }
 
     /**
@@ -114,7 +159,7 @@ class TransactionModel
         $totalPrice = 0;
 
         foreach ($purchasedProducts as $key => $value) {
-            $totalPrice += $value['productTotalPrice'];
+            $totalPrice += $value['totalPrice'];
         }
 
         $query = "INSERT INTO " . self::TRANSACTION_TABLE . " (customerID, deliveryMethod, paymentMethod, shippingAddress,totalPrice, status) VALUES (:customerID, :deliveryMethod, :paymentMethod, :shippingAddress, :totalPrice, :status)";
@@ -140,7 +185,7 @@ class TransactionModel
                     $statement->bindValue(':transactionID', $transactionID, PDO::PARAM_INT);
                     $statement->bindValue(':productID', $value['productID'], PDO::PARAM_INT);
                     $statement->bindValue(':productQuantity', $value['productQuantity'], PDO::PARAM_INT);
-                    $statement->bindValue(':productTotalPrice', $value['productTotalPrice'], PDO::PARAM_INT);
+                    $statement->bindValue(':productTotalPrice', $value['totalPrice'], PDO::PARAM_INT);
 
                     $statement->execute();
                 }

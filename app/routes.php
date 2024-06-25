@@ -79,6 +79,11 @@ class Routes
                 "middleware" => true,
                 "requiredRole" => "admin"
             ],
+            "api/transactions/customer/:id" => [
+                "handler" => "TransactionController@getTransactionByCustomerID",
+                "middleware" => true,
+                "requiredRole" => "customer"
+            ],
             "api/transaction/add" => [
                 "handler" => "TransactionController@addNewTransaction",
                 "middleware" => true,

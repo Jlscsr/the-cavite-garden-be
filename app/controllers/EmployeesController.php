@@ -2,7 +2,7 @@
 
 use App\Models\EmployeesModel;
 
-use Validators\EmployeesValidator;
+use App\Validators\EmployeesValidator;
 
 use App\Helpers\CookieManager;
 use App\Helpers\ResponseHelper;

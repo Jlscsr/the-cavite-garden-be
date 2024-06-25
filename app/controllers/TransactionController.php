@@ -51,9 +51,22 @@ class TransactionController
         }
     }
 
-    public function getAllTransactionsByCustomerId(): void
+    public function getTransactionByCustomerID($parameter): void
     {
-        //
+        try {
+            $response = $this->transactionModel->getTransactionByCustomerID($parameter['id']);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('No Transactions found', 404);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse($response, 'Successfully fetched transactions', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+        }
     }
 
     /**

@@ -2,7 +2,7 @@
 
 use App\Models\CustomersModel;
 
-use Validators\CustomersValidator;
+use App\Validators\CustomersValidator;
 
 use App\Helpers\JWTHelper;
 use App\Helpers\ResponseHelper;

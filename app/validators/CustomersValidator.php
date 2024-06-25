@@ -7,13 +7,13 @@ use App\Validators\RequestValidator;
 class CustomersValidator extends RequestValidator
 {
     static $requiredFields = [
-        'addressLabel' => '/^[a-zA-Z0-9\s-]+$/',
-        'region' => '/^[a-zA-Z0-9\s-]+$/',
-        'province' => '/^[a-zA-Z\s-]+$/',
-        'city' => '/^[a-zA-Z\s-]+$/',
-        'barangay' => '/^[a-zA-Z0-9\s-]+$/',
-        'streetBlkLt' => '/^[a-zA-Z0-9\s-]+$/',
-        'landmark' => '/^[a-zA-Z0-9\s-]+$/',
+        'addressLabel' => '/^[a-z]+$/',
+        'region' => '/^[a-zA-Z0-9\s-()]+$/',
+        'province' => '/^[a-zA-Z\s-()]+$/',
+        'city' => '/^[a-zA-Z\s-()]+$/',
+        'barangay' => '/^[a-zA-Z0-9\s-()]+$/',
+        'streetBlkLt' => '/^[a-zA-Z0-9\s-()]+$/',
+        'landmark' => '/^[a-zA-Z0-9\s-()]+$/',
     ];
 
     /**
@@ -27,6 +27,6 @@ class CustomersValidator extends RequestValidator
     {
         self::validatePOSTRequest($payload);
         self::checkRequiredFields($payload, self::$requiredFields);
-        self::checkFieldsPattern($payload, self::$requiredFields);
+        // self::checkFieldsPattern($payload, self::$requiredFields);
     }
 }
