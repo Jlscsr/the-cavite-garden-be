@@ -41,6 +41,7 @@ class JWTHelper
     public function decodeJWTData(string $token): object
     {
         $data = JWT::decode($token, new Key($this->secret_key, $this->hash_algorithm));
+
         return $data;
     }
 
@@ -54,8 +55,8 @@ class JWTHelper
     public function validateToken(string $token): bool
     {
         try {
-            $data = $this->decodeJWTData($token);
-            $expiryDate = $data->expiry_date;
+            $data = (object) $this->decodeJWTData($token);
+            $expiryDate =  $data->expiry_date;
 
             if ($expiryDate < time()) {
                 return false;

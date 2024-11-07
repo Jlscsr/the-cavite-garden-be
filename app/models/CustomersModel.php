@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use PDO;
+use PDOException;
 
 use RuntimeException;
 
@@ -12,10 +13,13 @@ class CustomersModel
 {
     private $pdo;
     private $helperModel;
+    private $roleMap = [
+        0 => 'customer',
+    ];
 
     // Constants
     private const CUSTOMERS_TABLE = 'customers_tb';
-    private const CUSTOMER_ADDRESS_TABLE = 'customers_shipping_address_tb';
+    private const CUSTOMER_ADDRESS_TABLE = 'customers_ship_address_tb';
 
     public function __construct($pdo)
     {
@@ -23,32 +27,9 @@ class CustomersModel
         $this->helperModel = new HelperModel($pdo);
     }
 
-    /**
-     * Retrieves all customers from the database.
-     *
-     * This function executes a SQL query to fetch all customers from the database.
-     * It retrieves the customer ID, first name, last name, phone number, email,
-     * creation date, and update date for each customer. If no customers are found,
-     * it throws a RuntimeException with the message "No customers found".
-     *
-     * Additionally, for each customer, it calls the `getCustomerAddressById` method
-     * to retrieve the shipping address and adds it to the customer array.
-     *
-     * @return array An array of customer data, each containing the customer ID,
-     *               first name, last name, phone number, email, creation date,
-     *               update date, and shipping address.
-     * @throws RuntimeException If an error occurs while fetching customers.
-     */
     public function getAllCustomers(): array
     {
-        $query = "SELECT 
-        id,
-        first_name,
-        last_name,
-        phone_number,
-        email,
-        created_at,
-        updated_at FROM " . self::CUSTOMERS_TABLE;
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE;
 
         $statement = $this->pdo->prepare($query);
 
@@ -59,6 +40,8 @@ class CustomersModel
             if (empty($customers)) {
                 throw new RuntimeException('No customers found');
             }
+
+            unset($customers['password']);
 
             foreach ($customers as $key => $value) {
                 $response = $this->getCustomerAddressById($value['id']);
@@ -89,7 +72,12 @@ class CustomersModel
         try {
             $statement->execute();
 
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $customer = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if($customer) {
+                $customer['role'] = $this->roleMap[$customer['role']];
+            }
+            return $customer;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -102,9 +90,9 @@ class CustomersModel
      * @throws RuntimeException If an error occurs while fetching the customer.
      * @return array An associative array representing the customer data, including the ID, first name, last name, phone number, birthdate, and email.
      */
-    public function getCustomerById(int $customerID): array | bool
+    public function getCustomerById(string $customerID): array | bool
     {
-        $query = "SELECT id, firstName, lastName, phoneNumber, birthdate, email, role FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customerID";
+        $query = "SELECT * FROM " . self::CUSTOMERS_TABLE . " WHERE id = :customerID";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
 
@@ -113,12 +101,15 @@ class CustomersModel
             $customer = $statement->fetch(PDO::FETCH_ASSOC);
 
             if ($customer) {
-                $customerID = (int) $customer['id'];
+                unset($customer['password']);
+                $customer['role'] = $this->roleMap[$customer['role']];
+                $customerID =  $customer['id'];
 
                 $shippingAddress = $this->getCustomerAddressByCustomerId($customerID);
 
                 $customer['shippingAddresses'] = $shippingAddress ? $shippingAddress : [];
             }
+
             return $customer;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
@@ -132,7 +123,7 @@ class CustomersModel
      * @throws RuntimeException If an error occurs while fetching the customer address.
      * @return array An associative array representing the customer address data.
      */
-    public function getCustomerAddressByCustomerId(int $customerID): array
+    public function getCustomerAddressByCustomerId(string $customerID): array
     {
         $query = "SELECT * FROM " . self::CUSTOMER_ADDRESS_TABLE . " WHERE customerID = :customerID";
         $statement = $this->pdo->prepare($query);
@@ -168,18 +159,20 @@ class CustomersModel
             throw new RuntimeException('Email already exists');
         }
 
+        $id = $this->helperModel->generateUuid();
+        $password = $this->helperModel->hashPassword($payload['password']);
         $firstName = $payload['firstName'];
         $lastName = $payload['lastName'];
         $birthdate = $payload['birthdate'];
         $phoneNumber = $payload['phoneNumber'];
         $customerEmail = $payload['customerEmail'];
-        $password = $payload['password'];
 
-        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (firstName, lastName, phoneNumber, birthdate, email, password) VALUES (:firstName, :lastName, :phoneNumber, :birthdate, :customerEmail, :password)";
+        $query = "INSERT INTO " . self::CUSTOMERS_TABLE . " (id, firstName, lastName, phoneNumber, birthdate, email, password) VALUES (:id, :firstName, :lastName, :phoneNumber, :birthdate, :customerEmail, :password)";
 
         $statement = $this->pdo->prepare($query);
 
         $bind_params = [
+            ':id' => $id,
             ':firstName' => $firstName,
             ':lastName' => $lastName,
             ':birthdate' => $birthdate,
@@ -216,37 +209,55 @@ class CustomersModel
      * @throws RuntimeException If there is an error executing the query
      * @return bool True if the address was successfully added, false otherwise
      */
-    public function addNewUserAddress(int $customerID, array $payload): bool
+    public function addNewUserAddress(string $customerID, array $payload): bool
     {
+        $id = $this->helperModel->generateUuid();
         $addressLabel = $payload['addressLabel'];
         $region = $payload['region'];
         $province = $payload['province'];
         $city = $payload['city'];
         $barangay = $payload['barangay'];
-        $streetBlkLt = $payload['streetBlkLt'];
+        $streetAddress = $payload['streedAddress'];
         $landmark = $payload['landmark'];
 
-        $query = "INSERT INTO " . self::CUSTOMER_ADDRESS_TABLE . " (customerID, addressLabel , region, province, municipality, barangay, streetBlkLt, landmark) VALUES (:customerID, :addressLabel, :region, :province, :city, :barangay, :streetBlkLt, :landmark)";
+        $query = "INSERT INTO " . self::CUSTOMER_ADDRESS_TABLE . " (id, customerID, addressLabel , region, province, municipality, barangay, streetAddress, landmark) VALUES (:id, :customerID, :addressLabel, :region, :province, :city, :barangay, :streetAddress, :landmark)";
         $statement = $this->pdo->prepare($query);
 
         $bind_params = [
+            ':id' => $id,
+            ':customerID' => $customerID,
             ':addressLabel' => $addressLabel,
             ':region' => $region,
             ':province' => $province,
             ':city' => $city,
             ':barangay' => $barangay,
-            ':streetBlkLt' => $streetBlkLt,
+            ':streetAddress' => $streetAddress,
             ':landmark' => $landmark,
         ];
 
-        $statement->bindValue(':customerID', $customerID, PDO::PARAM_INT);
         foreach ($bind_params as $param => $value) {
             $statement->bindValue($param, $value, PDO::PARAM_STR);
         }
 
         try {
             $statement->execute();
+
             return $statement->rowCount() > 0;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
+    protected function getCustomerAddressById(string $customerID): array
+    {
+        $query = "SELECT * FROM " . self::CUSTOMER_ADDRESS_TABLE . " WHERE customerID = :customerID";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+
+            return $statement->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }

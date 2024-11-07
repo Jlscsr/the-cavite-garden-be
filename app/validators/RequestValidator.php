@@ -91,8 +91,12 @@ class RequestValidator implements ValidatorInterface
     public static function checkFieldsPattern(array $payload, array $requiredFields): void
     {
         foreach ($payload as $key => $value) {
-            if ($requiredFields[$key] !== null && !preg_match($requiredFields[$key], $value)) {
-                throw new InvalidArgumentException($key . ' format is invalid.');
+            if (isset($requiredFields[$key]['format']) && !preg_match($requiredFields[$key]['format'], $value)) {
+                if ($requiredFields[$key]['format'] === null) {
+                    continue;
+                }
+                $errorMessage = $requiredFields[$key]['errorMessage'] ?? $key . ' format is invalid.';
+                throw new InvalidArgumentException($errorMessage);
             }
         }
     }
@@ -111,8 +115,14 @@ class RequestValidator implements ValidatorInterface
      */
     public static function checkRequiredFields(array $payload, array $requiredFields): void
     {
+        $requiredFieldKeys = array_keys($requiredFields);
+        foreach ($requiredFields as $field => $rules) {
+            if (!array_key_exists($field, $payload)) {
+                throw new InvalidArgumentException($field . ' is a required field.');
+            }
+        }
+
         foreach ($payload as $key => $value) {
-            $requiredFieldKeys = array_keys($requiredFields);
             if (!in_array($key, $requiredFieldKeys)) {
                 throw new InvalidArgumentException($key . ' is not a valid field.');
             }

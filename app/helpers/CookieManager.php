@@ -80,7 +80,6 @@ class CookieManager
 
         if (!isset($headers['Cookie'])) {
             return ['status' => 'failed', 'message' => 'Cookie header is missing'];
-            exit;
         }
 
         return $headers['Cookie'];

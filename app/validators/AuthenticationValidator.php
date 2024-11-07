@@ -8,14 +8,33 @@ use App\Validators\RequestValidator;
 
 class AuthenticationValidator extends RequestValidator
 {
-    static $requiredFields = [
-        'firstName' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-        'lastName' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-        'birthdate' => '/^\d{4}-\d{2}-\d{2}$/',
-        'phoneNumber' => '/^(09|\+639)\d{9}$/',
-        'customerEmail' => '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
-        'password' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%_*?&]{8,}$/',
+    static $registerPayloadRequiredFields = [
+        'firstName' => [
+            'format' => '/^(?=.{2,50}$)[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
+            'errorMessage' => 'First name must be 2-50 characters and can contain letters and hyphens.'
+        ],
+        'lastName' => [
+            'format' => '/^(?=.{2,50}$)[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
+            'errorMessage' => 'Last name must be 2-50 characters and can contain letters and hyphens.'
+        ],
+        'birthdate' => [
+            'format' => '/^\d{4}-\d{2}-\d{2}$/',
+            'errorMessage' => 'Birthdate must be in YYYY-MM-DD format.'
+        ],
+        'phoneNumber' => [
+            'format' => '/^(09|\+639)\d{9}$/',
+            'errorMessage' => 'Phone number must start with 09 or +639 and be followed by 9 digits.'
+        ],
+        'customerEmail' => [
+            'format' => '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
+            'errorMessage' => 'Please enter a valid email address.'
+        ],
+        'password' => [
+            'format' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%_*?&]{8,}$/',
+            'errorMessage' => 'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.'
+        ]
     ];
+    
 
 
     /**
@@ -33,8 +52,8 @@ class AuthenticationValidator extends RequestValidator
     public static function validateRegisterPayload(array $payload): void
     {
         self::validatePOSTRequest($payload);
-        self::checkRequiredFields($payload, self::$requiredFields);
-        // self::checkFieldsPattern($payload, self::$requiredFields);
+        self::checkRequiredFields($payload, self::$registerPayloadRequiredFields);
+        self::checkFieldsPattern($payload, self::$registerPayloadRequiredFields);
     }
 
     /**
@@ -55,7 +74,6 @@ class AuthenticationValidator extends RequestValidator
 
         if (!isset($payload['email']) || !isset($payload['password'])) {
             throw new InvalidArgumentException('Email or password is missing in the payload');
-            exit;
         }
     }
 }

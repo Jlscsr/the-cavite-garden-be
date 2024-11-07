@@ -5,14 +5,17 @@ use App\Helpers\ResponseHelper;
 use App\Validators\SubCategoriesValidator;
 
 use App\Models\SubCategoriesModel;
+use App\Models\HelperModel;
 
 class SubCategoriesController
 {
     private $subCategoriesModel;
+    private $helperModel;
 
     public function __construct($pdo)
     {
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -23,19 +26,18 @@ class SubCategoriesController
      * @throws RuntimeException if an exception occurs while retrieving the subcategories.
      * @return void
      */
-    public function getAllSubCategories(): void
+    public function getAllSubCategories()
     {
         try {
             $subCategories = $this->subCategoriesModel->getAllSubCategories();
 
-            if (!$subCategories) {
-                ResponseHelper::sendErrorResponse("No Sub Categories found", 404);
-                exit;
+            if (empty($subCategories)) {
+                return ResponseHelper::sendSuccessResponse([], "No Sub Categories found", 404);
             }
 
-            ResponseHelper::sendSuccessResponse($subCategories, 'Sub Categories retrieved successfully');
+            return ResponseHelper::sendSuccessResponse($subCategories, 'Sub Categories retrieved successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -47,23 +49,23 @@ class SubCategoriesController
      * @throws InvalidArgumentException If the request payload is invalid.
      * @return void
      */
-    public function addNewSubCategory(array $payload): void
+    public function addNewSubCategory(array $payload)
     {
         try {
             SubCategoriesValidator::validateAddSubCategoryRequest($payload);
 
+            $payload['id'] = $this->helperModel->generateUuid();
             $response = $this->subCategoriesModel->addNewSubCategory($payload);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to add Sub Category", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to add Sub Category", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Sub Category added successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'Sub Category added successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
     }
 
@@ -76,7 +78,7 @@ class SubCategoriesController
      * @throws InvalidArgumentException If the provided arguments are invalid.
      * @return void
      */
-    public function editSubCategory(array $parameter, array $payload): void
+    public function editSubCategory(array $parameter, array $payload)
     {
         try {
             SubCategoriesValidator::validateEditSubCategoryRequest($parameter, $payload);
@@ -104,23 +106,22 @@ class SubCategoriesController
      * @throws InvalidArgumentException If the provided arguments are invalid.
      * @return void
      */
-    public function deleteSubCategory(array $parameter): void
+    public function deleteSubCategory(array $parameter)
     {
         try {
             SubCategoriesValidator::validateDeleteSubCategoryRequest($parameter);
 
-            $response = $this->subCategoriesModel->deleteSubCategory((int) $parameter['id']);
+            $response = $this->subCategoriesModel->deleteSubCategory($parameter['id']);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to delete Sub Category", 500);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to delete Sub Category", 500);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Sub Category deleted successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'Sub Category deleted successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
     }
 }

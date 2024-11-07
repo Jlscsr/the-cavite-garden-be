@@ -15,8 +15,8 @@ class CategoriesModel
     private $pdo;
     private $subCategoriesModel;
 
-    private const PRODUCTS_CATEGORIES_TABLE = 'products_categories_tb';
-    private const PRODUCTS_SUB_CATEGORIES_TABLE = 'products_sub_categories_tb';
+    private const PRODUCTS_CATEGORIES_TABLE = 'product_categories_tb';
+    private const PRODUCTS_SUB_CATEGORIES_TABLE = 'product_sub_categories_tb';
 
     public function __construct($pdo)
     {
@@ -43,9 +43,12 @@ class CategoriesModel
             $statement->execute();
             $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
 
+            if (empty($categories)) {
+                return [];
+            }
 
             foreach ($categories as $key => $category) {
-                $categoryID = (int) $category['id'];
+                $categoryID = $category['id'];
                 $subCategory = $this->subCategoriesModel->getSubCategoryByCategoryId($categoryID);
 
                 if (!empty($subCategory)) {
@@ -73,7 +76,7 @@ class CategoriesModel
      * @throws RuntimeException If there is an error during the retrieval process.
      * @return array An array containing the category information.
      */
-    public function getCategoryById(int $id): array
+    public function getCategoryById(string $id): array
     {
         $query = "SELECT * FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
 
@@ -82,6 +85,12 @@ class CategoriesModel
 
         try {
             $statement->execute();
+            $category = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if (empty($category)) {
+                return [];
+            }
+
             return $statement->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
@@ -103,7 +112,13 @@ class CategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $category = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if (empty($category)) {
+                return [];
+            }
+
+            return $category;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -125,8 +140,13 @@ class CategoriesModel
 
         try {
             $statement->execute();
+            $category = $statement->fetch(PDO::FETCH_ASSOC);
 
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            if (empty($category)) {
+                return [];
+            }
+
+            return $category;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -141,19 +161,25 @@ class CategoriesModel
      */
     public function addNewCategory(array $payload): bool
     {
+        $id = $payload['id'];
         $categoryName = $payload['categoryName'];
         $categoryDescription = $payload['categoryDescription'];
 
-        $query = "INSERT INTO " . self::PRODUCTS_CATEGORIES_TABLE . " (categoryName, categoryDescription) VALUES (:categoryName, :categoryDescription)";
+        $query = "INSERT INTO " . self::PRODUCTS_CATEGORIES_TABLE . " (id, categoryName, categoryDescription) VALUES (:id, :categoryName, :categoryDescription)";
         $statement = $this->pdo->prepare($query);
 
+        $statement->bindValue(':id', $id, PDO::PARAM_STR);
         $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
         $statement->bindValue(':categoryDescription', $categoryDescription, PDO::PARAM_STR);
 
         try {
             $statement->execute();
 
-            return $statement->rowCount() > 0;
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -168,7 +194,7 @@ class CategoriesModel
      * @throws RuntimeException If there is an error during the update process.
      * @return bool True if the category was successfully updated, false otherwise.
      */
-    public function editCategory(int $categoryID, array $payload): bool
+    public function editCategory(string $categoryID, array $payload): bool
     {
         $categoryName = $payload['categoryName'];
         $categoryDescription = $payload['categoryDescription'];
@@ -176,14 +202,18 @@ class CategoriesModel
         $query = "UPDATE " . self::PRODUCTS_CATEGORIES_TABLE . " SET categoryName = :categoryName, categoryDescription = :categoryDescription WHERE id = :id";
         $statement = $this->pdo->prepare($query);
 
-        $statement->bindValue(':id', $categoryID, PDO::PARAM_INT);
+        $statement->bindValue(':id', $categoryID, PDO::PARAM_STR);
         $statement->bindValue(':categoryName', $categoryName, PDO::PARAM_STR);
         $statement->bindValue(':categoryDescription', $categoryDescription, PDO::PARAM_STR);
 
         try {
             $statement->execute();
 
-            return $statement->rowCount() > 0;
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -196,12 +226,12 @@ class CategoriesModel
      * @throws RuntimeException If there is an error during the deletion process.
      * @return bool True if the category was successfully deleted, false otherwise.
      */
-    public function deleteCategory(int $categoryID): bool
+    public function deleteCategory(string $categoryID): bool
     {
         $query = "DELETE FROM " . self::PRODUCTS_SUB_CATEGORIES_TABLE . " WHERE categoryID = :id";
         $statement = $this->pdo->prepare($query);
 
-        $statement->bindValue(':id', $categoryID, PDO::PARAM_INT);
+        $statement->bindValue(':id', $categoryID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
@@ -209,11 +239,15 @@ class CategoriesModel
             $query = "DELETE FROM " . self::PRODUCTS_CATEGORIES_TABLE . " WHERE id = :id";
             $statement = $this->pdo->prepare($query);
 
-            $statement->bindValue(':id', $categoryID, PDO::PARAM_INT);
+            $statement->bindValue(':id', $categoryID, PDO::PARAM_STR);
 
             $statement->execute();
 
-            return $statement->rowCount() > 0;
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }

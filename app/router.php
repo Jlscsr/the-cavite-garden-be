@@ -2,6 +2,8 @@
 
 namespace App;
 
+use RuntimeException;
+
 use Config\DatabaseConnection;
 
 use App\Routes;

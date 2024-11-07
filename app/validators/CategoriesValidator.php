@@ -9,9 +9,15 @@ use App\Validators\RequestValidator;
 class CategoriesValidator extends RequestValidator
 {
     static $requiredParameters = ['id'];
-    static $requiredFields = [
-        'categoryName' => '/^[a-zA-Z\s]{3,}$/',
-        'categoryDescription' => '/^.{10,}$/'
+    static $categoriesPayloadRequiredFields = [
+        'categoryName' => [
+            'format' => '/^[a-zA-Z\s]{3,}$/',
+            'errorMessage' => 'Category name must be at least 3 characters long and can only contain letters and spaces.'
+        ],
+        'categoryDescription' => [
+            'format' => '/^.{10,}$/',
+            'errorMessage' => 'Category description must be at least 10 characters long.'
+        ]
     ];
 
     /**
@@ -30,10 +36,6 @@ class CategoriesValidator extends RequestValidator
                 throw new InvalidArgumentException($key . ' is not a valid parameter.');
             }
         }
-
-        if (isset($parameter['id']) && !is_numeric($parameter['id'])) {
-            throw new InvalidArgumentException('ID field must be a number type');
-        }
     }
 
     /**
@@ -43,11 +45,11 @@ class CategoriesValidator extends RequestValidator
      * @throws InvalidArgumentException If the payload is invalid.
      * @return void
      */
-    public static function validateAddCategoryRequest(array $payload): void
+    public static function validateAddCategoryPayload(array $payload): void
     {
         self::validatePOSTRequest($payload);
-        self::checkRequiredFields($payload, self::$requiredFields);
-        self::checkFieldsPattern($payload, self::$requiredFields);
+        self::checkRequiredFields($payload, self::$categoriesPayloadRequiredFields);
+        self::checkFieldsPattern($payload, self::$categoriesPayloadRequiredFields);
     }
 
     /**
@@ -63,8 +65,8 @@ class CategoriesValidator extends RequestValidator
     public static function validateEditCategoryRequest(array $parameter, array $payload): void
     {
         self::validatePUTRequest($parameter, $payload);
-        self::checkRequiredFields($payload, self::$requiredFields);
-        self::checkFieldsPattern($payload, self::$requiredFields);
+        self::checkRequiredFields($payload, self::$categoriesPayloadRequiredFields);
+        self::checkFieldsPattern($payload, self::$categoriesPayloadRequiredFields);
     }
 
     /**
@@ -82,10 +84,6 @@ class CategoriesValidator extends RequestValidator
             if (!in_array($key, self::$requiredParameters)) {
                 throw new InvalidArgumentException($key . ' is not a valid parameter.');
             }
-        }
-
-        if (isset($parameter['id']) && !is_numeric($parameter['id'])) {
-            throw new InvalidArgumentException('ID field must be a number type');
         }
     }
 }

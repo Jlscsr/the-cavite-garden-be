@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use Ramsey\Uuid\Uuid;
+
 use PDO;
+use PDOException;
 
 use RuntimeException;
 
@@ -30,4 +33,15 @@ class HelperModel
             throw new RuntimeException($e->getMessage());
         }
     }
+
+    public function generateUuid(): string
+    {
+        return Uuid::uuid7()->toString();
+    }
+
+    public function hashPassword(string $password): string
+    {
+        return password_hash($password, PASSWORD_BCRYPT, ['cost' => 15]);
+    }
+
 }

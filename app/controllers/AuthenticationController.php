@@ -55,21 +55,17 @@ class AuthenticationController
             $payload['customerEmail'] = filter_var($payload['customerEmail'], FILTER_SANITIZE_EMAIL);
             $payload['password'] = filter_var($payload['password'], FILTER_SANITIZE_SPECIAL_CHARS);
 
-            $hashedPassword = password_hash($payload['password'], PASSWORD_BCRYPT, ['cost' => 15]);
-            $payload['password'] = $hashedPassword;
-
             $response = $this->customerModel->addNewCustomer($payload);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse('Failed to register new account', 400);
-                exit;
+                return ResponseHelper::sendErrorResponse('Failed to register new account', 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'User registered successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'User registered successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage());
+            return ResponseHelper::sendErrorResponse($e->getMessage());
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage());
+            return ResponseHelper::sendErrorResponse($e->getMessage());
         }
     }
 
@@ -80,7 +76,7 @@ class AuthenticationController
      * @throws RuntimeException If an error occurs during login.
      * @return void
      */
-    public function login(array $payload): void
+    public function login(array $payload)
     {
         try {
             AuthenticationValidator::validateLoginPayload($payload);
@@ -91,8 +87,7 @@ class AuthenticationController
             $userAccount = $this->customerModel->getCustomerByEmail($email) ?: $this->employeeModel->getEmployeeByEmail($email);
 
             if (!$userAccount || !password_verify($password, $userAccount['password'])) {
-                ResponseHelper::sendUnauthorizedResponse($userAccount ? 'Incorrect password' : 'Account not found');
-                exit;
+                return ResponseHelper::sendUnauthorizedResponse($userAccount ? 'Incorrect password' : 'Account not found');
             }
 
             $expiryDate = time() + (5 * 3600);
@@ -109,28 +104,27 @@ class AuthenticationController
 
             $this->cookieManager->setCookiHeader($token, $expiryDate);
 
-            ResponseHelper::sendSuccessResponse($userAccount, 'Logged In success', 201);
+            return ResponseHelper::sendSuccessResponse($userAccount, 'Logged In success', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage());
+            return ResponseHelper::sendErrorResponse($e->getMessage());
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage());
+            return ResponseHelper::sendErrorResponse($e->getMessage());
         }
     }
 
-    public function getUserInfo(): void
+    public function getUserInfo()
     {
         try {
             $userID = $this->getCostumerIDFromToken();
             $userAccount = $this->customerModel->getCustomerById($userID) ?: $this->employeeModel->getEmployeeById($userID);
 
             if (!$userAccount) {
-                ResponseHelper::sendUnauthorizedResponse('Account not found');
-                exit;
+                return ResponseHelper::sendUnauthorizedResponse('Account not found');
             }
 
-            ResponseHelper::sendSuccessResponse($userAccount, 'User account fetched successfully', 200);
+            return ResponseHelper::sendSuccessResponse($userAccount, 'User account fetched successfully', 200);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage());
+            return ResponseHelper::sendErrorResponse($e->getMessage());
         }
     }
 
@@ -176,11 +170,11 @@ class AuthenticationController
         }
     }
 
-    private function getCostumerIDFromToken(): int
+    private function getCostumerIDFromToken(): string
     {
         $cookieHeader = $this->cookieManager->validateCookiePressence();
         $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = $this->jwt->decodeJWTData($response['token']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
 
         return $decodedToken->id;
     }

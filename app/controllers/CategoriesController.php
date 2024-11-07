@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\CategoriesModel;
+use App\Models\HelperModel;
 
 use App\Validators\CategoriesValidator;
 
@@ -9,10 +10,13 @@ use App\Helpers\ResponseHelper;
 class CategoriesController
 {
     private $categoriesModel;
+    private $helperModel;
+
 
     public function __construct($pdo)
     {
         $this->categoriesModel = new CategoriesModel($pdo);
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -21,19 +25,18 @@ class CategoriesController
      * @return void
      * @throws RuntimeException if there is an error retrieving the categories
      */
-    public function getAllCategories(): void
+    public function getAllCategories()
     {
         try {
             $productCategories = $this->categoriesModel->getAllCategories();
 
-            if (!$productCategories) {
-                ResponseHelper::sendErrorResponse("No categories found", 404);
-                exit;
+            if (empty($productCategories)) {
+                return ResponseHelper::sendSuccessResponse([], "No categories found", 404);
             }
 
-            ResponseHelper::sendSuccessResponse($productCategories, 'Product categories retrieved successfully');
+            return ResponseHelper::sendSuccessResponse($productCategories, 'Product categories retrieved successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -45,23 +48,23 @@ class CategoriesController
      * @throws InvalidArgumentException If the request payload is invalid.
      * @return void
      */
-    public function addNewCategory(array $payload): void
+    public function addNewCategory(array $payload)
     {
         try {
-            CategoriesValidator::validateAddCategoryRequest($payload);
+            CategoriesValidator::validateAddCategoryPayload($payload);
 
+            $payload['id'] = $this->helperModel->generateUuid();
             $response = $this->categoriesModel->addNewCategory($payload);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to add new Category", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to add new Category", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Category added successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'Category added successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
     }
 
@@ -74,23 +77,22 @@ class CategoriesController
      * @throws InvalidArgumentException If the category update request is invalid.
      * @return void
      */
-    public function editCategory(array $parameter, array $payload): void
+    public function editCategory(array $parameter, array $payload)
     {
         try {
             CategoriesValidator::validateEditCategoryRequest($parameter, $payload);
 
-            $response = $this->categoriesModel->editCategory((int) $parameter['id'], $payload);
+            $response = $this->categoriesModel->editCategory($parameter['id'], $payload);
 
             if (empty($response)) {
-                ResponseHelper::sendErrorResponse("Failed to edit category", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to edit category", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Category edited successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'Category edited successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
     }
 
@@ -102,23 +104,22 @@ class CategoriesController
      * @throws InvalidArgumentException If the category deletion request is invalid.
      * @return void
      */
-    public function deleteCategory(array $parameter): void
+    public function deleteCategory(array $parameter)
     {
         try {
             CategoriesValidator::validateDeleteCategoryRequest($parameter);
 
-            $response = $this->categoriesModel->deleteCategory((int) $parameter['id']);
+            $response = $this->categoriesModel->deleteCategory($parameter['id']);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to delete category", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to delete category", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Category deleted successfully');
+            return ResponseHelper::sendSuccessResponse([], 'Category deleted successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
     }
 }

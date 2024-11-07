@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use PDO;
+use PDOException;
 
 use RuntimeException;
 
@@ -10,7 +11,7 @@ class SubCategoriesModel
 {
     private $pdo;
 
-    private const SUB_CATEGORY_TABLE = 'products_sub_categories_tb';
+    private const SUB_CATEGORY_TABLE = 'product_sub_categories_tb';
 
     public function __construct($pdo)
     {
@@ -30,7 +31,13 @@ class SubCategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            $subCategories = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($subCategories)) {
+                return [];
+            }
+
+            return $subCategories;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -43,7 +50,7 @@ class SubCategoriesModel
      * @throws RuntimeException If an error occurs during the database operation.
      * @return array An associative array representing the subcategory.
      */
-    public function getSubCategoryById(int $subCategoryID): array
+    public function getSubCategoryById(string $subCategoryID): array
     {
         $query = "SELECT * FROM " . self::SUB_CATEGORY_TABLE . " WHERE id = :subCategoryID";
         $statement = $this->pdo->prepare($query);
@@ -51,7 +58,13 @@ class SubCategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $subCategory = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if (empty($subCategory)) {
+                return [];
+            }
+
+            return $subCategory;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -72,13 +85,18 @@ class SubCategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $subCategory = $statement->fetch(PDO::FETCH_ASSOC);
+            if ($statement->rowCount() === 0) {
+                return [];
+            }
+
+            return $subCategory;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
     }
 
-    public function getSubCategoryByCategoryId(int $categoryID): array
+    public function getSubCategoryByCategoryId(string $categoryID): array
     /**
      * Retrieves a subcategory from the database based on the given category ID.
      *
@@ -94,7 +112,13 @@ class SubCategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            $subCategories = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($subCategories)) {
+                return [];
+            }
+
+            return $subCategories;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -115,7 +139,13 @@ class SubCategoriesModel
 
         try {
             $statement->execute();
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $subCategoryID = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if ($statement->rowCount() === 0) {
+                return [];
+            }
+
+            return $subCategoryID;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -131,20 +161,27 @@ class SubCategoriesModel
      */
     public function addNewSubCategory(array $payload): bool
     {
-        $categoryID = (int) $payload['categoryID'];
+        $id = $payload['id'];
+        $categoryID = $payload['categoryID'];
         $subCategoryName = $payload['subCategoryName'];
         $subCategoryDescription = $payload['subCategoryDescription'];
 
-        $query = "INSERT INTO " . self::SUB_CATEGORY_TABLE . " (categoryID, subCategoryName, subCategoryDescription) VALUES (:categoryID, :subCategoryName, :subCategoryDescription)";
+        $query = "INSERT INTO " . self::SUB_CATEGORY_TABLE . " (id, categoryID, subCategoryName, subCategoryDescription) VALUES (:id, :categoryID, :subCategoryName, :subCategoryDescription)";
         $statement = $this->pdo->prepare($query);
 
-        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_INT);
+        $statement->bindValue(':id', $id, PDO::PARAM_STR);
+        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_STR);
         $statement->bindValue(':subCategoryName', $subCategoryName, PDO::PARAM_STR);
         $statement->bindValue(':subCategoryDescription', $subCategoryDescription, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->rowCount() > 0;
+
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -159,23 +196,28 @@ class SubCategoriesModel
      * @throws RuntimeException If an error occurs during the database operation.
      * @return bool Returns true if the subcategory was successfully edited, false otherwise.
      */
-    public function editSubCategory(int $subCategoryID, array $payload): bool
+    public function editSubCategory(string $subCategoryID, array $payload): bool
     {
-        $categoryID = (int) $payload['categoryID'];
+        $categoryID = $payload['categoryID'];
         $subCategoryName = $payload['subCategoryName'];
         $subCategoryDescription = $payload['subCategoryDescription'];
 
         $query = "UPDATE " . self::SUB_CATEGORY_TABLE . " SET categoryID = :categoryID, subCategoryName = :subCategoryName, subCategoryDescription = :subCategoryDescription WHERE id = :id";
         $statement = $this->pdo->prepare($query);
 
-        $statement->bindValue(':id', $subCategoryID, PDO::PARAM_INT);
-        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_INT);
+        $statement->bindValue(':id', $subCategoryID, PDO::PARAM_STR);
+        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_STR);
         $statement->bindValue(':subCategoryName', $subCategoryName, PDO::PARAM_STR);
         $statement->bindValue(':subCategoryDescription', $subCategoryDescription, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->rowCount() > 0;
+
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
@@ -188,15 +230,21 @@ class SubCategoriesModel
      * @throws RuntimeException If an error occurs during the database operation.
      * @return bool Returns true if the subcategory was successfully deleted, false otherwise.
      */
-    public function deleteSubCategory(int $subCategoryID): bool
+    public function deleteSubCategory(string $subCategoryID): bool
     {
         $query = "DELETE FROM " . self::SUB_CATEGORY_TABLE . " WHERE id = :id";
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':id', $subCategoryID, PDO::PARAM_INT);
+
+        $statement->bindValue(':id', $subCategoryID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->rowCount() > 0;
+
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }

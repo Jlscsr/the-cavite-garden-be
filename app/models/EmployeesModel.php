@@ -7,21 +7,37 @@ use PDOException;
 
 use RuntimeException;
 
-use App\Models\HelperModel;
-
 use App\Helpers\ResponseHelper;
+
+use App\Models\HelperModel;
 
 class EmployeesModel
 {
     private $pdo;
-    private $helper_model;
+    private $helperModel;
+    private $roleMap = [
+        0 => 'employee',
+        1 => 'admin'
+    ];
+    private $genderMap = [
+        0 => 'male',
+        1 => 'female'
+    ];
+
+    private $maritalStatusMap = [
+        0 => 'single',
+        1 => 'married',
+        2 => 'divorced',
+        3 => 'widowed',
+        4 => 'separated'
+    ];
 
     private const EMPLOYEES_TABLE = 'employees_tb';
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
-        $this->helper_model = new HelperModel($pdo);
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -46,30 +62,23 @@ class EmployeesModel
      */
     public function getAllEmployees(): array
     {
-        $query = "
-            SELECT 
-                id,
-                firstName,
-                lastName,
-                middleName,
-                nickname,
-                email,
-                birthdate,
-                sex,
-                maritalStatus,
-                role,
-                status,
-                dateStarted,
-                createdAt,
-                modifiedAt 
-            FROM " . self::EMPLOYEES_TABLE;
+        $query = "SELECT  * FROM " . self::EMPLOYEES_TABLE;
 
         $statement = $this->pdo->prepare($query);
 
         try {
             $statement->execute();
 
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            $employees = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($employees) {
+                foreach ($employees as $key => $customer) {
+                    unset($employees[$key]['password']);
+                    $employees[$key]['role'] = $this->roleMap[$customer['role']];
+                }
+            }
+
+            return $employees;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage(), 500);
         }
@@ -96,25 +105,10 @@ class EmployeesModel
      *               - modifiedAt: The date the employee was last modified.
      * @throws RuntimeException If there is an error executing the database query.
      */
-    public function getEmployeeById(int $employeeID): array | bool
+    public function getEmployeeById(string $employeeID): array | bool
     {
         $query = "
-            SELECT 
-                id, 
-                firstName, 
-                lastName, 
-                middleName, 
-                nickname, 
-                birthdate, 
-                email, 
-                sex, 
-                maritalStatus, 
-                status, 
-                role, 
-                dateStarted, 
-                createdAt, 
-                modifiedAt 
-            FROM " . self::EMPLOYEES_TABLE . " WHERE id = :employeeID";
+            SELECT * FROM " . self::EMPLOYEES_TABLE . " WHERE id = :employeeID";
 
         $statement = $this->pdo->prepare($query);
 
@@ -123,7 +117,17 @@ class EmployeesModel
         try {
             $statement->execute();
 
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $employee = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if ($employee) {
+                $employee['role'] = $this->roleMap[$employee['role']];
+                $employee['gender'] = $this->genderMap[$employee['gender']];
+                $employee['maritalStatus'] = $this->maritalStatusMap[$employee['maritalStatus']];
+                $employee['nickName'] = $employee['nickname'] ?? 'N/A';
+            }
+
+
+            return $employee;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage(), 500);
         }
@@ -150,7 +154,7 @@ class EmployeesModel
      *               - createdAt: The date the employee was created.
      *               - modifiedAt: The date the employee was last modified.
      */
-    public function getEmployeeByEmail(string $customerEmail): array
+    public function getEmployeeByEmail(string $customerEmail): array | bool
     {
 
         $query = "SELECT * FROM " . self::EMPLOYEES_TABLE . " WHERE email = :customerEmail LIMIT 1";
@@ -160,7 +164,13 @@ class EmployeesModel
         try {
             $statement->execute();
 
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            $employee = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if ($employee) {
+                $employee['role'] = $this->roleMap[$employee['role']];
+            }
+
+            return $employee;
         } catch (PDOException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
@@ -186,12 +196,13 @@ class EmployeesModel
      */
     public function addNewEmployee(array $payload): bool
     {
-        $response = $this->helper_model->checkForDuplicateEmail('employees_tb', $payload['employeeEmail']);
+        $response = $this->helperModel->checkForDuplicateEmail('employees_tb', $payload['employeeEmail']);
 
         if ($response) {
             throw new RuntimeException('Email already exists', 400);
         }
 
+        $id = $this->helperModel->generateUuid();
         $firstName = $payload['firstName'];
         $middleName = $payload['middleName'];
         $lastName = $payload['lastName'];
@@ -200,19 +211,17 @@ class EmployeesModel
         $sex = $payload['sex'];
         $maritalStatus = $payload['maritalStatus'];
         $email = $payload['employeeEmail'];
-        $password = $payload['password'];
+        $password = $this->helperModel->hashPassword($payload['password']);
         $role = $payload['role'];
         $status = 'active';
         $dateStarted = $payload['dateStarted'];
 
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT, ['cost' => 15]);
-        $password = $hashed_password;
-
-        $query = "INSERT INTO " . self::EMPLOYEES_TABLE . " (firstName, middleName, lastName, nickname, birthdate, sex,maritalStatus, email, password, role, status, dateStarted) VALUES (:firstName, :middleName, :lastName, :nickname, :birthdate, :sex, :maritalStatus, :email, :password, :role, :status, :dateStarted)";
+        $query = "INSERT INTO " . self::EMPLOYEES_TABLE . " (id, firstName, middleName, lastName, nickname, birthdate, sex,maritalStatus, email, password, role, status, dateStarted) VALUES (:id, :firstName, :middleName, :lastName, :nickname, :birthdate, :sex, :maritalStatus, :email, :password, :role, :status, :dateStarted)";
 
         $statement = $this->pdo->prepare($query);
 
         $bind_params = [
+            ':id' => $id,
             ':firstName' => $lastName,
             ':middleName' => $firstName,
             ':lastName' => $middleName,
@@ -257,7 +266,7 @@ class EmployeesModel
      * @throws RuntimeException If there is an error executing the database query.
      * @return bool Returns true if the employee's information was successfully updated, false otherwise.
      */
-    public function editEmployee(int $employeeID, array $payload): bool
+    public function editEmployee(string $employeeID, array $payload): bool
     {
         $firstName = $payload['firstName'];
         $middleName = $payload['middleName'];
@@ -274,6 +283,7 @@ class EmployeesModel
         $statement = $this->pdo->prepare($query);
 
         $bind_params = [
+            ':employeeID' => $employeeID,
             ':firstName' => $firstName,
             ':middleName' => $middleName,
             ':lastName' => $lastName,
@@ -284,8 +294,6 @@ class EmployeesModel
             ':role' => $role,
             ':dateStarted' => $dateStarted,
         ];
-
-        $statement->bindValue(':employeeID', $employeeID, PDO::PARAM_INT);
 
         foreach ($bind_params as $key => $value) {
             $statement->bindValue($key, $value, PDO::PARAM_STR);

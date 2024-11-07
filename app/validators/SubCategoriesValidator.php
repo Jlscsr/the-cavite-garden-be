@@ -10,9 +10,18 @@ class SubCategoriesValidator extends RequestValidator
 {
     static $requiredParameters = ['id'];
     static $requiredFields = [
-        'categoryID' => null,
-        'subCategoryName' => '/^[a-zA-Z\s]{3,}$/',
-        'subCategoryDescription' => '/^.{10,}$/'
+        'categoryID' => [
+            'format' => null,
+            'errorMessage' => ''
+        ],
+        'subCategoryName' => [
+            'format' => '/^[a-zA-Z\s]{3,}$/',
+            'errorMessage' => 'Subcategory name must be at least 3 characters long and can only contain letters and spaces.'
+        ],
+        'subCategoryDescription' => [
+            'format' => '/^.{10,}$/',
+            'errorMessage' => 'Subcategory description must be at least 10 characters long.'
+        ]
     ];
 
     /**
@@ -30,10 +39,6 @@ class SubCategoriesValidator extends RequestValidator
             if (!in_array($key, self::$requiredParameters)) {
                 throw new InvalidArgumentException($key . ' is not a valid parameter.');
             }
-        }
-
-        if (isset($parameter['id']) && !is_numeric($parameter['id'])) {
-            throw new InvalidArgumentException('ID field must be a number type');
         }
     }
 
@@ -84,10 +89,6 @@ class SubCategoriesValidator extends RequestValidator
             if (!in_array($key, self::$requiredParameters)) {
                 throw new InvalidArgumentException($key . ' is not a valid parameter.');
             }
-        }
-
-        if (isset($parameter['id']) && !is_numeric($parameter['id'])) {
-            throw new InvalidArgumentException('ID field must be a number type');
         }
     }
 }
