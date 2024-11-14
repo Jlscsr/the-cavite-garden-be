@@ -11,30 +11,36 @@ class AuthenticationValidator extends RequestValidator
     static $registerPayloadRequiredFields = [
         'firstName' => [
             'format' => '/^(?=.{2,50}$)[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-            'errorMessage' => 'First name must be 2-50 characters and can contain letters and hyphens.'
+            'errorMessage' => 'First name must be 2-50 characters and can contain letters and hyphens.',
+            'required' => true,
         ],
         'lastName' => [
             'format' => '/^(?=.{2,50}$)[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-            'errorMessage' => 'Last name must be 2-50 characters and can contain letters and hyphens.'
+            'errorMessage' => 'Last name must be 2-50 characters and can contain letters and hyphens.',
+            'required' => true,
         ],
         'birthdate' => [
             'format' => '/^\d{4}-\d{2}-\d{2}$/',
-            'errorMessage' => 'Birthdate must be in YYYY-MM-DD format.'
+            'errorMessage' => 'Birthdate must be in YYYY-MM-DD format.',
+            'required' => true,
         ],
         'phoneNumber' => [
             'format' => '/^(09|\+639)\d{9}$/',
-            'errorMessage' => 'Phone number must start with 09 or +639 and be followed by 9 digits.'
+            'errorMessage' => 'Phone number must start with 09 or +639 and be followed by 9 digits.',
+            'required' => true,
         ],
         'customerEmail' => [
             'format' => '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
-            'errorMessage' => 'Please enter a valid email address.'
+            'errorMessage' => 'Please enter a valid email address.',
+            'required' => true,
         ],
         'password' => [
             'format' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%_*?&]{8,}$/',
-            'errorMessage' => 'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.'
+            'errorMessage' => 'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.',
+            'required' => true,
         ]
     ];
-    
+
 
 
     /**

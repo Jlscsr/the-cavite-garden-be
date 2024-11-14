@@ -7,15 +7,19 @@ use PDOException;
 
 use RuntimeException;
 
+use App\Models\HelperModel;
+
+
 class SubCategoriesModel
 {
     private $pdo;
-
+    private $helperModel;
     private const SUB_CATEGORY_TABLE = 'product_sub_categories_tb';
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -161,7 +165,7 @@ class SubCategoriesModel
      */
     public function addNewSubCategory(array $payload): bool
     {
-        $id = $payload['id'];
+        $id = $this->helperModel->generateUuid();
         $categoryID = $payload['categoryID'];
         $subCategoryName = $payload['subCategoryName'];
         $subCategoryDescription = $payload['subCategoryDescription'];

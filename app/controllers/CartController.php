@@ -4,6 +4,8 @@ use App\Models\CartModel;
 
 use App\Validators\CartValidator;
 
+use App\Models\HelperModel;
+
 use App\Helpers\JWTHelper;
 use App\Helpers\ResponseHelper;
 use App\Helpers\CookieManager;
@@ -13,12 +15,14 @@ class CartController
     private $jwt;
     private $cartModel;
     private $cookieManager;
+    private $helperModel;
 
     public function __construct($pdo)
     {
         $this->jwt = new JWTHelper();
         $this->cartModel = new CartModel($pdo);
         $this->cookieManager = new CookieManager();
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -62,8 +66,8 @@ class CartController
     public function addProductToCart(array $payload): void
     {
         try {
-            CartValidator::validateAddProductToCartRequest($payload);
 
+            $payload['id'] = $this->helperModel->generateUuid();
             $payload['customerID'] = $this->getCustomerIDFromToken();
 
             $response = $this->cartModel->addProductToCart($payload);
@@ -117,11 +121,11 @@ class CartController
      * @throws RuntimeException if there is an error decoding the JWT token
      * @return int The customer ID extracted from the token
      */
-    private function getCustomerIDFromToken(): int
+    private function getCustomerIDFromToken(): string
     {
         $cookieHeader = $this->cookieManager->validateCookiePressence();
         $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = $this->jwt->decodeJWTData($response['token']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
 
         return $decodedToken->id;
     }

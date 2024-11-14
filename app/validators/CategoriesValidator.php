@@ -12,11 +12,13 @@ class CategoriesValidator extends RequestValidator
     static $categoriesPayloadRequiredFields = [
         'categoryName' => [
             'format' => '/^[a-zA-Z\s]{3,}$/',
-            'errorMessage' => 'Category name must be at least 3 characters long and can only contain letters and spaces.'
+            'errorMessage' => 'Category name must be at least 3 characters long and can only contain letters and spaces.',
+            'required' => true,
         ],
         'categoryDescription' => [
             'format' => '/^.{10,}$/',
-            'errorMessage' => 'Category description must be at least 10 characters long.'
+            'errorMessage' => 'Category description must be at least 10 characters long.',
+            'required' => true,
         ]
     ];
 

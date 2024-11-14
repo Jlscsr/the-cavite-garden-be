@@ -16,11 +16,13 @@ class SubCategoriesValidator extends RequestValidator
         ],
         'subCategoryName' => [
             'format' => '/^[a-zA-Z\s]{3,}$/',
-            'errorMessage' => 'Subcategory name must be at least 3 characters long and can only contain letters and spaces.'
+            'errorMessage' => 'Subcategory name must be at least 3 characters long and can only contain letters and spaces.',
+            'required' => true,
         ],
         'subCategoryDescription' => [
             'format' => '/^.{10,}$/',
-            'errorMessage' => 'Subcategory description must be at least 10 characters long.'
+            'errorMessage' => 'Subcategory description must be at least 10 characters long.',
+            'required' => true,
         ]
     ];
 

@@ -31,19 +31,18 @@ class ProductsController
      * @throws RuntimeException If an error occurs during the retrieval of products.
      * @return void
      */
-    public function getAllProducts(): void
+    public function getAllProducts()
     {
         try {
             $products = $this->productsModel->getAllProducts();
 
-            if (!$products) {
-                ResponseHelper::sendErrorResponse("No products found", 404);
-                exit;
+            if (empty($products)) {
+                return ResponseHelper::sendSuccessResponse([], "No products found", 404);
             }
 
-            ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
+            return ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -60,23 +59,22 @@ class ProductsController
      * @throws InvalidArgumentException If the parameter is invalid.
      * @return void
      */
-    public function getProductByID(array $parameter): void
+    public function getProductByID(array $parameter)
     {
         try {
             ProductsValidator::validateGetProductRequestsByParameter($parameter);
 
-            $products = $this->productsModel->getProductByID((int) $parameter['id']);
+            $product = $this->productsModel->getProductByID($parameter['id']);
 
-            if (!$products) {
-                ResponseHelper::sendErrorResponse("No products found by that id.", 404);
-                exit;
+            if (empty($product)) {
+                return ResponseHelper::sendSuccessResponse([], "No product found by that id.", 404);
             }
 
-            ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
+            return ResponseHelper::sendSuccessResponse($product, 'Product retrieved successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -93,23 +91,22 @@ class ProductsController
      * @throws InvalidArgumentException If the parameter is invalid.
      * @return void
      */
-    public function getAllProductsByCategory(array $parameter): void
+    public function getAllProductsByCategory(array $parameter)
     {
         try {
             ProductsValidator::validateGetProductRequestsByParameter($parameter);
 
-            $products = $this->productsModel->getAllProductsByCategory((int) $parameter['id']);
+            $products = $this->productsModel->getAllProductsByCategory($parameter['id']);
 
-            if (!$products) {
-                ResponseHelper::sendErrorResponse("No Products found base on the Category", 404);
-                exit;
+            if (empty($products)) {
+                return ResponseHelper::sendSuccessResponse([], "No Products found base on the Category", 404);
             }
 
-            ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
+            return ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -126,7 +123,7 @@ class ProductsController
      * @throws InvalidArgumentException If the payload is invalid.
      * @return void
      */
-    public function addNewProduct(array $payload): void
+    public function addNewProduct(array $payload)
     {
         try {
             ProductsValidator::validateAddProductRequest($payload);
@@ -134,15 +131,14 @@ class ProductsController
             $response = $this->productsModel->addNewProduct($payload);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to add new product", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to add new product", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Product added successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'Product added successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -160,21 +156,20 @@ class ProductsController
      * @throws InvalidArgumentException If the parameter or payload is invalid.
      * @return void
      */
-    public function editProduct(array $parameter, array $payload): void
+    public function editProduct(array $parameter, array $payload)
     {
         try {
             ProductsValidator::validateEditProductRequest($parameter, $payload);
 
-            $response = $this->productsModel->editProduct((int) $parameter['id'], $payload);
+            $response = $this->productsModel->editProduct($parameter['id'], $payload);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to edit product", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to edit product", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Product edited successfully', 201);
+            return ResponseHelper::sendSuccessResponse([], 'Product edited successfully', 201);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 
@@ -190,21 +185,20 @@ class ProductsController
      * @throws RuntimeException If an error occurs during the deletion of the product.
      * @return void
      */
-    public function deleteProduct(array $parameter): void
+    public function deleteProduct(array $parameter)
     {
         try {
             ProductsValidator::validateDeleteProductRequest($parameter);
 
-            $response = $this->productsModel->deleteProduct((int) $parameter['id']);
+            $response = $this->productsModel->deleteProduct($parameter['id']);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse("Failed to delete product", 400);
-                exit;
+                return ResponseHelper::sendErrorResponse("Failed to delete product", 400);
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Product deleted successfully');
+            return ResponseHelper::sendSuccessResponse([], 'Product deleted successfully');
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
     }
 }

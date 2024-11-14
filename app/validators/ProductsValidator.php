@@ -10,14 +10,47 @@ class ProductsValidator extends RequestValidator
 {
     static $requiredParameters = ['id', 'category'];
     static $requiredFields = [
-        'productPhotoURL' => null,
-        'productName' => '/^[a-zA-Z0-9\s]{3,}$/',
-        'productCategory' => '/^[a-zA-Z\s]{3,}$/',
-        'productSubCategory' => '/^([a-zA-Z\s]{3,})?$/',
-        'productPrice' => '/^\d+(\.\d{1,2})?$/',
-        'productSize' => '/^.*$/',
-        'productStock' => '/^\d+$/',
-        'productDescription' => '/^.{10,}$/'
+        'productPhotoURL' => [
+            'format' => null,
+            'erroMessage' => '',
+            'required' => true,
+        ],
+        'productName' => [
+            'format' => '/^[a-zA-Z0-9\s]{3,}$/',
+            'errorMessage' => 'Product name must be at least 3 characters long and contain only letters, numbers, and spaces.',
+            'required' => true,
+        ],
+        'productCategory' => [
+            'format' => '/^[a-zA-Z\s]{3,}$/',
+            'errorMessage' => 'Product category must be at least 3 characters long and contain only letters and spaces.',
+            'required' => true,
+        ],
+        'productSubCategory' => [
+            'format' => '/^([a-zA-Z\s]{3,})?$/',
+            'errorMessage' => 'Product sub-category must be at least 3 characters long and contain only letters and spaces.',
+            'required' => false,
+        ],
+        'productPrice' => [
+            'format' => '/^\d+(\.\d{1,2})?$/',
+            'errorMessage' => 'Product price must be a number with up to 2 decimal places.',
+            'required' => true,
+        ],
+        'productSize' => [
+            'format' => '/^(small|medium|large)$/i', // Allows only "small", "medium", "large", or "fit"
+            'errorMessage' => 'Invalid product size format. Allowed values are small, medium, large',
+            'required' => false,
+        ],
+
+        'productStock' => [
+            'format' => '/^\d+$/',
+            'errorMessage' => 'Product stock must be a number.',
+            'required' => true,
+        ],
+        'productDescription' => [
+            'format' => '/^.{10,}$/',
+            'errorMessage' => 'Product description must be at least 10 characters long.',
+            'required' => true,
+        ]
     ];
 
     /**
@@ -35,14 +68,6 @@ class ProductsValidator extends RequestValidator
             if (!in_array($key, self::$requiredParameters)) {
                 throw new InvalidArgumentException($key . ' is not a valid parameter.');
             }
-        }
-
-        if (isset($parameter['id']) && !is_numeric($parameter['id'])) {
-            throw new InvalidArgumentException('ID field must be a number type');
-        }
-
-        if (isset($parameter['category']) && !is_numeric($parameter['category'])) {
-            throw new InvalidArgumentException('Category field must be a number type');
         }
     }
 

@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\CategoriesModel;
-use App\Models\HelperModel;
 
 use App\Validators\CategoriesValidator;
 
@@ -10,13 +9,11 @@ use App\Helpers\ResponseHelper;
 class CategoriesController
 {
     private $categoriesModel;
-    private $helperModel;
 
 
     public function __construct($pdo)
     {
         $this->categoriesModel = new CategoriesModel($pdo);
-        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -53,7 +50,6 @@ class CategoriesController
         try {
             CategoriesValidator::validateAddCategoryPayload($payload);
 
-            $payload['id'] = $this->helperModel->generateUuid();
             $response = $this->categoriesModel->addNewCategory($payload);
 
             if (!$response) {

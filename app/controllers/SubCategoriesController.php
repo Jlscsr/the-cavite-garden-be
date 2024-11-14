@@ -5,7 +5,6 @@ use App\Helpers\ResponseHelper;
 use App\Validators\SubCategoriesValidator;
 
 use App\Models\SubCategoriesModel;
-use App\Models\HelperModel;
 
 class SubCategoriesController
 {
@@ -15,7 +14,6 @@ class SubCategoriesController
     public function __construct($pdo)
     {
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
-        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -54,7 +52,6 @@ class SubCategoriesController
         try {
             SubCategoriesValidator::validateAddSubCategoryRequest($payload);
 
-            $payload['id'] = $this->helperModel->generateUuid();
             $response = $this->subCategoriesModel->addNewSubCategory($payload);
 
             if (!$response) {

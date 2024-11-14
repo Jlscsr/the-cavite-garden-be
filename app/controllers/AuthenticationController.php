@@ -152,21 +152,19 @@ class AuthenticationController
             $cookieHeader = $this->cookieManager->validateCookiePressence();
 
             if (is_array($cookieHeader) && isset($cookieHeader['status']) && ($cookieHeader['status'] === 'failed')) {
-                ResponseHelper::sendUnauthorizedResponse($cookieHeader['message']);
-                exit;
+                return ResponseHelper::sendUnauthorizedResponse($cookieHeader['message']);
             }
 
             $response = $this->cookieManager->extractAccessTokenFromCookieHeader(trim($cookieHeader));
 
             if (!$this->jwt->validateToken($response['token'])) {
                 $this->cookieManager->resetCookieHeader();
-                ResponseHelper::sendUnauthorizedResponse('Invalid token');
-                exit;
+                return ResponseHelper::sendUnauthorizedResponse('Invalid token');
             }
 
-            ResponseHelper::sendSuccessResponse([], 'Token is valid', 200);
+            return ResponseHelper::sendSuccessResponse([], 'Token is valid', 200);
         } catch (RuntimeException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage());
+            return ResponseHelper::sendErrorResponse($e->getMessage());
         }
     }
 

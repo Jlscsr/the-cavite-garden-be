@@ -9,11 +9,13 @@ use RuntimeException;
 use InvalidArgumentException;
 
 use App\Models\SubCategoriesModel;
+use App\Models\HelperModel;
 
 class CategoriesModel
 {
     private $pdo;
     private $subCategoriesModel;
+    private $helperModel;
 
     private const PRODUCTS_CATEGORIES_TABLE = 'product_categories_tb';
     private const PRODUCTS_SUB_CATEGORIES_TABLE = 'product_sub_categories_tb';
@@ -22,6 +24,7 @@ class CategoriesModel
     {
         $this->pdo = $pdo;
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -161,7 +164,7 @@ class CategoriesModel
      */
     public function addNewCategory(array $payload): bool
     {
-        $id = $payload['id'];
+        $id = $this->helperModel->generateUuid();
         $categoryName = $payload['categoryName'];
         $categoryDescription = $payload['categoryDescription'];
 

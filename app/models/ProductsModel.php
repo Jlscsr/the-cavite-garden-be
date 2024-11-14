@@ -9,22 +9,25 @@ use RuntimeException;
 
 use App\Models\CategoriesModel;
 use App\Models\SubCategoriesModel;
+use App\Models\HelperModel;
 
 class ProductsModel
 {
     private $pdo;
     private $categoriesModel;
     private $subCategoriesModel;
+    private $helperModel;
 
     private const PRODUCTS_TABLE = 'products_tb';
-    private const CATEGORIES_TABLE = 'products_categories_tb';
-    private const SUB_CATEGORIES_TABLE = 'products_sub_categories_tb';
+    private const CATEGORIES_TABLE = 'product_categories_tb';
+    private const SUB_CATEGORIES_TABLE = 'product_sub_categories_tb';
 
     public function __construct($pdo)
     {
         $this->pdo = $pdo;
         $this->categoriesModel = new CategoriesModel($pdo);
         $this->subCategoriesModel = new SubCategoriesModel($pdo);
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -35,8 +38,7 @@ class ProductsModel
      */
     public function getAllProducts()
     {
-        try {
-            $query = "
+        $query = "
                 SELECT p.*, c.categoryName as categoryName,
                 CASE 
                     WHEN p.subCategoryId IS NULL THEN NULL
@@ -46,10 +48,17 @@ class ProductsModel
                 JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
                 LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
             ";
+        $statement = $this->pdo->query($query);
 
-            $statement = $this->pdo->query($query);
+        try {
+            $statement->execute();
+            $products = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            if (empty($products)) {
+                return [];
+            }
+
+            return $products;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
@@ -62,7 +71,7 @@ class ProductsModel
      * @throws RuntimeException Database Error: if there is an issue with the database connection.
      * @return array|null An associative array representing the product with its category and subcategory names, or null if no product is found.
      */
-    public function getProductByID($productID)
+    public function getProductByID(string $productID)
     {
         $query = "
                 SELECT p.*, c.categoryName as categoryName,
@@ -77,12 +86,17 @@ class ProductsModel
             ";
 
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':plantID', $productID, PDO::PARAM_INT);
+        $statement->bindValue(':plantID', $productID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
+            $product = $statement->fetch(PDO::FETCH_ASSOC);
 
-            return $statement->fetch(PDO::FETCH_ASSOC);
+            if (empty($product)) {
+                return [];
+            }
+
+            return $product;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
@@ -95,7 +109,7 @@ class ProductsModel
      * @throws RuntimeException Database Error: if there is an issue with the database connection.
      * @return array An array of associative arrays representing the products with their category and subcategory names.
      */
-    public function getAllProductsByCategory($categoryID)
+    public function getAllProductsByCategory(string $categoryID)
     {
         $query = "
                 SELECT p.*, c.categoryName as categoryName,
@@ -110,11 +124,17 @@ class ProductsModel
             ";
 
         $statement = $this->pdo->prepare($query);
-        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_INT);
+        $statement->bindValue(':categoryID', $categoryID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
-            return $statement->fetchAll(PDO::FETCH_ASSOC);
+            $products = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($products)) {
+                return [];
+            }
+
+            return $products;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
@@ -136,8 +156,9 @@ class ProductsModel
      * @throws RuntimeException If there is a database error.
      * @return bool Returns true if the product is successfully added, false otherwise.
      */
-    public function addNewProduct($payload)
+    public function addNewProduct(array $payload)
     {
+        $id = $this->helperModel->generateUuid();
         $productPhotoURL = $payload['productPhotoURL'];
         $productName = $payload['productName'];
         $productCategory = $payload['productCategory'];
@@ -154,10 +175,11 @@ class ProductsModel
         $categoryID = $categoryID['id'];
         $subCategoryID = isset($subCategoryID['id']) ? $subCategoryID['id'] : null;
 
-        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (categoryID, subCategoryID, productName, productDescription, productImage, productStock, productSize, productPrice) VALUES (:categoryID, :subCategoryID, :productName, :productDescription, :productImage, :productStock, :productSize, :productPrice)";
+        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (id, categoryID, subCategoryID, productName, productDescription, productImage, productStock, productSize, productPrice) VALUES (:id, :categoryID, :subCategoryID, :productName, :productDescription, :productImage, :productStock, :productSize, :productPrice)";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
+            ':id' => $id,
             ':categoryID' => $categoryID,
             ':subCategoryID' => $subCategoryID,
             ':productName' => $productName,
@@ -175,7 +197,11 @@ class ProductsModel
         try {
             $statement->execute();
 
-            return $statement->rowCount() > 0;
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
@@ -198,7 +224,7 @@ class ProductsModel
      * @throws RuntimeException If there is an error during the database operation.
      * @return bool True if the product was successfully edited, false otherwise.
      */
-    public function editProduct($productID, $payload)
+    public function editProduct(string $productID, array $payload)
     {
         $productPhotoURL = $payload['productPhotoURL'];
         $productName = $payload['productName'];
@@ -237,7 +263,11 @@ class ProductsModel
         try {
             $statement->execute();
 
-            return $statement->rowCount() > 0;
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
@@ -250,7 +280,7 @@ class ProductsModel
      * @throws RuntimeException If there is an error during the database operation.
      * @return bool Returns true if the product is successfully deleted, false otherwise.
      */
-    public function deleteProduct($productID)
+    public function deleteProduct(string $productID)
     {
         $query = "DELETE FROM " . self::PRODUCTS_TABLE . " WHERE id = :id";
         $statement = $this->pdo->prepare($query);
@@ -259,7 +289,12 @@ class ProductsModel
 
         try {
             $statement->execute();
-            return $statement->rowCount() > 0;
+
+            if ($statement->rowCount() === 0) {
+                return false;
+            }
+
+            return true;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }

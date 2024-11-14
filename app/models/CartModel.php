@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use PDO;
+use PDOException;
 
 use RuntimeException;
 
@@ -15,7 +16,7 @@ class CartModel
     private $pdo;
     private $plantModel;
 
-    private const CART_TABLE = "cart_tb";
+    private const CART_TABLE = "customer_cart_tb";
 
     public function __construct($pdo)
     {
@@ -30,7 +31,7 @@ class CartModel
      * @return array An array of cart products, each containing the product information.
      * @throws PDOException If there is an error executing the database query.
      */
-    public function getCostumerCartProducts(int $costumerID): array
+    public function getCostumerCartProducts(string $costumerID)
     {
         $query = "SELECT * FROM " . self::CART_TABLE . " WHERE customerID = :customerID";
         $statement = $this->pdo->prepare($query);
@@ -48,7 +49,7 @@ class CartModel
             }
 
             foreach ($productIDs as $productID) {
-                $product = $this->plantModel->getProductByID((int) $productID);
+                $product = $this->plantModel->getProductByID($productID);
                 $productLists[] = $product;
             }
 
@@ -77,44 +78,48 @@ class CartModel
      */
     public function addProductToCart(array $payload): bool
     {
+        $id = $payload['id'];
         $customerID = $payload['customerID'];
         $productID = $payload['productID'];
         $productQuantity = $payload['productQuantity'];
-        $productBasePrice = $payload['productBasePrice'];
+        $productInitialPrice = $payload['productInitialPrice'];
+        $totalPrice = $payload['totalPrice'];
 
         $query = "SELECT * FROM " . self::CART_TABLE . " WHERE customerID = :customerID AND productID = :productID";
 
         $statement = $this->pdo->prepare($query);
 
-        $statement->bindValue(':customerID', $customerID, PDO::PARAM_INT);
-        $statement->bindValue(':productID', $productID, PDO::PARAM_INT);
+        $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+        $statement->bindValue(':productID', $productID, PDO::PARAM_STR);
 
         try {
             $statement->execute();
 
             if ($statement->rowCount() > 0) {
 
-                $query = "UPDATE " . self::CART_TABLE . " SET productQuantity = productQuantity + :productQuantity, totalPrice = totalPrice + (:quantity * :productBasePrice) WHERE customerID = :customerID AND productID = :productID";
+                $query = "UPDATE " . self::CART_TABLE . " SET productQuantity = :productQuantity, productInitialPrice = :productInitialPrice, totalPrice = :totalPrice WHERE customerID = :customerID AND productID = :productID";
+
                 $statement = $this->pdo->prepare($query);
 
-                $statement->bindValue(':customerID', $customerID, PDO::PARAM_INT);
-                $statement->bindValue(':productID', $productID, PDO::PARAM_INT);
-                $statement->bindValue(':productQuantity', $productQuantity, PDO::PARAM_INT);
-                $statement->bindValue(':quantity', $productQuantity, PDO::PARAM_INT);
-                $statement->bindValue(':productBasePrice', $productBasePrice, PDO::PARAM_INT);
+                $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+                $statement->bindValue(':productID', $productID, PDO::PARAM_STR);
+                $statement->bindValue(':productQuantity', $productQuantity, PDO::PARAM_STR);
+                $statement->bindValue(':productInitialPrice', $productInitialPrice, PDO::PARAM_STR);
+                $statement->bindValue(':totalPrice', $totalPrice, PDO::PARAM_STR);
 
                 $statement->execute();
 
                 return $statement->rowCount() > 0;
             } else {
-                $totalPrice = $productBasePrice * $productQuantity;
 
-                $query = "INSERT INTO " . self::CART_TABLE . " (customerID, productID, productQuantity, totalPrice) VALUES (:customerID, :productID, :productQuantity, :totalPrice)";
+                $query = "INSERT INTO " . self::CART_TABLE . " (id, customerID, productID, productQuantity, productInitialPrice, totalPrice) VALUES (:id, :customerID, :productID, :productQuantity, :productInitialPrice, :totalPrice)";
                 $statement = $this->pdo->prepare($query);
 
+                $statement->bindValue(':id', $id, PDO::PARAM_STR);
                 $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
                 $statement->bindValue(':productID', $productID, PDO::PARAM_STR);
                 $statement->bindValue(':productQuantity', $productQuantity, PDO::PARAM_INT);
+                $statement->bindValue(':productInitialPrice', $productInitialPrice, PDO::PARAM_INT);
                 $statement->bindValue(':totalPrice', $totalPrice, PDO::PARAM_INT);
 
                 $statement->execute();

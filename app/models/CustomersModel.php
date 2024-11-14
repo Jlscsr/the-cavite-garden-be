@@ -74,7 +74,7 @@ class CustomersModel
 
             $customer = $statement->fetch(PDO::FETCH_ASSOC);
 
-            if($customer) {
+            if ($customer) {
                 $customer['role'] = $this->roleMap[$customer['role']];
             }
             return $customer;
@@ -194,6 +194,37 @@ class CustomersModel
         }
     }
 
+    public function updateUserData($customerID, $payload)
+    {
+        $firstName = $payload['firstName'];
+        $lastName = $payload['lastName'];
+        $phoneNumber = $payload['phoneNumber'];
+        $birthdate = $payload['birthdate'];
+
+        $query = "UPDATE " . self::CUSTOMERS_TABLE . " SET firstName = :firstName, lastName = :lastName, phoneNumber = :phoneNumber, birthdate = :birthdate WHERE id = :customerID";
+        $statement = $this->pdo->prepare($query);
+
+        $bind_params = [
+            ':firstName' => $firstName,
+            ':lastName' => $lastName,
+            ':phoneNumber' => $phoneNumber,
+            ':birthdate' => $birthdate,
+            ':customerID' => $customerID,
+        ];
+
+        foreach ($bind_params as $param => $value) {
+            $statement->bindValue($param, $value, PDO::PARAM_STR);
+        }
+
+        try {
+            $statement->execute();
+
+            return $statement->rowCount() > 0;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
     /**
      * Adds a new user address to the database.
      *
@@ -217,7 +248,7 @@ class CustomersModel
         $province = $payload['province'];
         $city = $payload['city'];
         $barangay = $payload['barangay'];
-        $streetAddress = $payload['streedAddress'];
+        $streetAddress = $payload['streetAddress'];
         $landmark = $payload['landmark'];
 
         $query = "INSERT INTO " . self::CUSTOMER_ADDRESS_TABLE . " (id, customerID, addressLabel , region, province, municipality, barangay, streetAddress, landmark) VALUES (:id, :customerID, :addressLabel, :region, :province, :city, :barangay, :streetAddress, :landmark)";

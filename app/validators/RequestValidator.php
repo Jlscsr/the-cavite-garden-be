@@ -91,12 +91,12 @@ class RequestValidator implements ValidatorInterface
     public static function checkFieldsPattern(array $payload, array $requiredFields): void
     {
         foreach ($payload as $key => $value) {
-            if (isset($requiredFields[$key]['format']) && !preg_match($requiredFields[$key]['format'], $value)) {
-                if ($requiredFields[$key]['format'] === null) {
-                    continue;
+            // Skip if the format is null or if the value itself is null (allowing nullable fields)
+            if (isset($requiredFields[$key]['format']) && $requiredFields[$key]['format'] !== null) {
+                if ($value !== null && !preg_match($requiredFields[$key]['format'], $value)) {
+                    $errorMessage = $requiredFields[$key]['errorMessage'] ?? $key . ' format is invalid.';
+                    throw new InvalidArgumentException($errorMessage);
                 }
-                $errorMessage = $requiredFields[$key]['errorMessage'] ?? $key . ' format is invalid.';
-                throw new InvalidArgumentException($errorMessage);
             }
         }
     }
@@ -115,16 +115,19 @@ class RequestValidator implements ValidatorInterface
      */
     public static function checkRequiredFields(array $payload, array $requiredFields): void
     {
-        $requiredFieldKeys = array_keys($requiredFields);
         foreach ($requiredFields as $field => $rules) {
-            if (!array_key_exists($field, $payload)) {
+            $isRequired = $rules['required'] ?? false;
+
+            // Check if field is required and missing
+            if ($isRequired && !array_key_exists($field, $payload)) {
                 throw new InvalidArgumentException($field . ' is a required field.');
             }
         }
 
+        $validFields = array_keys($requiredFields);
         foreach ($payload as $key => $value) {
-            if (!in_array($key, $requiredFieldKeys)) {
-                throw new InvalidArgumentException($key . ' is not a valid field.');
+            if (!in_array($key, $validFields)) {
+                throw new InvalidArgumentException(message: $key . ' is not a valid field.');
             }
         }
     }

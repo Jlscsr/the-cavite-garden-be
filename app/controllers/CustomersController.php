@@ -69,6 +69,26 @@ class CustomersController
         }
     }
 
+    public function updateUserData(array $payload): void
+    {
+        try {
+            $customerID = $this->getCostumerIDFromToken();
+
+            $response = $this->customerModel->updateUserData($customerID, $payload);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to update user data', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'User data updated successfully', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+        }
+    }
+
     /**
      * Adds a new user address.
      *
@@ -80,7 +100,6 @@ class CustomersController
     public function addNewUserAddress(array $payload): void
     {
         try {
-            CustomersValidator::validateAddCustomerAddress($payload);
 
             $customerID = $this->getCostumerIDFromToken();
 
@@ -107,11 +126,11 @@ class CustomersController
      *
      * @return int The customer ID extracted from the token.
      */
-    private function getCostumerIDFromToken(): int
+    private function getCostumerIDFromToken(): string
     {
         $cookieHeader = $this->cookieManager->validateCookiePressence();
         $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = $this->jwt->decodeJWTData($response['token']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
 
         return $decodedToken->id;
     }
