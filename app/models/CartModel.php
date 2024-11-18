@@ -61,7 +61,32 @@ class CartModel
             $cartProducts = $products;
             return $cartProducts;
         } catch (PDOException $e) {
-            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+            throw new RuntimeException($e->getMessage(), 500);
+        }
+    }
+
+    public function getProductCartByID(string $id, string $customerID)
+    {
+        try {
+            $query = "SELECT * FROM " . self::CART_TABLE . " WHERE id = :id AND customerID = :customerID";
+            $statement = $this->pdo->prepare($query);
+
+            $statement->bindValue(':id', $id, PDO::PARAM_STR);
+
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+
+            $statement->execute();
+            $cartProduct = $statement->fetch(PDO::FETCH_ASSOC);
+
+            $productID = $cartProduct['productID'];
+
+            $product = $this->plantModel->getProductByID($productID);
+
+            $cartProduct['productInfo'] = $product;
+
+            return $cartProduct;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage(), 500);
         }
     }
 

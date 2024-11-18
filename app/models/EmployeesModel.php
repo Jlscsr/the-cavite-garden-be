@@ -16,20 +16,25 @@ class EmployeesModel
     private $pdo;
     private $helperModel;
     private $roleMap = [
-        0 => 'employee',
-        1 => 'admin'
+        '0' => 'employee',
+        '1' => 'admin'
     ];
     private $genderMap = [
-        0 => 'male',
-        1 => 'female'
+        '0' => 'male',
+        '1' => 'female'
     ];
 
     private $maritalStatusMap = [
-        0 => 'single',
-        1 => 'married',
-        2 => 'divorced',
-        3 => 'widowed',
-        4 => 'separated'
+        '0' => 'single',
+        '1' => 'married',
+        '2' => 'divorced',
+        '3' => 'widowed',
+        '4' => 'separated',
+        'single' => 0,
+        'married' => 1,
+        'divorced' => 2,
+        'widowed' => 3,
+        'separated' => 4
     ];
 
     private const EMPLOYEES_TABLE = 'employees_tb';
@@ -74,9 +79,15 @@ class EmployeesModel
             if ($employees) {
                 foreach ($employees as $key => $customer) {
                     unset($employees[$key]['password']);
-                    $employees[$key]['role'] = $this->roleMap[$customer['role']];
+
+                    // Ensure the 'role' exists in the customer array before accessing it
+                    if (isset($customer['role'])) {
+                        $employees[$key]['role'] = $this->roleMap[$customer['role']] ?? 'unknown';
+                    }
                 }
             }
+
+
 
             return $employees;
         } catch (PDOException $e) {
@@ -121,8 +132,8 @@ class EmployeesModel
 
             if ($employee) {
                 $employee['role'] = $this->roleMap[$employee['role']];
-                $employee['gender'] = $this->genderMap[$employee['gender']];
-                $employee['maritalStatus'] = $this->maritalStatusMap[$employee['maritalStatus']];
+                $employee['gender'] = (string) $this->genderMap[$employee['gender']];
+                $employee['maritalStatus'] = (string) $this->maritalStatusMap[$employee['maritalStatus']];
                 $employee['nickName'] = $employee['nickname'] ?? 'N/A';
             }
 
@@ -208,15 +219,14 @@ class EmployeesModel
         $lastName = $payload['lastName'];
         $nickname = $payload['nickname'];
         $birthdate = $payload['birthdate'];
-        $sex = $payload['sex'];
-        $maritalStatus = $payload['maritalStatus'];
+        $gender = $payload['sex'] === 'male' ? '0' : '1';
+        $maritalStatus = $this->maritalStatusMap[$payload['maritalStatus']];
         $email = $payload['employeeEmail'];
         $password = $this->helperModel->hashPassword($payload['password']);
         $role = $payload['role'];
-        $status = 'active';
         $dateStarted = $payload['dateStarted'];
 
-        $query = "INSERT INTO " . self::EMPLOYEES_TABLE . " (id, firstName, middleName, lastName, nickname, birthdate, sex,maritalStatus, email, password, role, status, dateStarted) VALUES (:id, :firstName, :middleName, :lastName, :nickname, :birthdate, :sex, :maritalStatus, :email, :password, :role, :status, :dateStarted)";
+        $query = "INSERT INTO " . self::EMPLOYEES_TABLE . " (id, firstName, middleName, lastName, nickname, birthdate, gender, maritalStatus, email, password, role, dateStarted) VALUES (:id, :firstName, :middleName, :lastName, :nickname, :birthdate, :gender, :maritalStatus, :email, :password, :role, :dateStarted)";
 
         $statement = $this->pdo->prepare($query);
 
@@ -227,12 +237,11 @@ class EmployeesModel
             ':lastName' => $middleName,
             ':nickname' => $nickname,
             ':birthdate' => $birthdate,
-            ':sex' => $sex,
+            ':gender' => $gender,
             ':maritalStatus' => $maritalStatus,
             ':email' => $email,
             ':password' => $password,
             ':role' => $role,
-            ':status' => $status,
             ':dateStarted' => $dateStarted
         ];
 

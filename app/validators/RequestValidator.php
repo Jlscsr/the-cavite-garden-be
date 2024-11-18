@@ -92,7 +92,7 @@ class RequestValidator implements ValidatorInterface
     {
         foreach ($payload as $key => $value) {
             // Skip if the format is null or if the value itself is null (allowing nullable fields)
-            if (isset($requiredFields[$key]['format']) && $requiredFields[$key]['format'] !== null) {
+            if (isset($requiredFields[$key]['format']) && $requiredFields[$key]['format'] !== null && $requiredFields[$key]['required']) {
                 if ($value !== null && !preg_match($requiredFields[$key]['format'], $value)) {
                     $errorMessage = $requiredFields[$key]['errorMessage'] ?? $key . ' format is invalid.';
                     throw new InvalidArgumentException($errorMessage);

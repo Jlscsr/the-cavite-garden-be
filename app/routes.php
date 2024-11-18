@@ -9,176 +9,192 @@ class Routes
     public function __construct()
     {
         $this->routes = [
-            "api/user/info" => [
+            /* Reivews API  routes */
+            "/api/product/review/add" => [
+                "handler" => "ReviewsController@addNewProductReview",
+                "middleware" => false,
+                "requiredRole" => "both"
+            ],
+            /* User API routes */
+            "/api/user/info" => [
                 "handler" => "AuthenticationController@getUserInfo",
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
-            /* TODO: Need some fix for transactions API routes */
-            "api/transactions/:status" => [
+            "/api/transactions/status/:status" => [
                 "handler" => "TransactionController@getAllTransactions",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/transaction/status/:id" => [
+            "/api/transaction/status/update/:id" => [
                 "handler" => "TransactionController@updateTransactionStatus",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/transactions/customer/:id" => [
+            "/api/transactions/customer/id/:customerID" => [
                 "handler" => "TransactionController@getTransactionByCustomerID",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
-            "api/transaction/add" => [
+            "/api/transaction/add" => [
                 "handler" => "TransactionController@addNewTransaction",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
             /* Customer Cart API routes */
-            "api/customer/cart/delete/:id" => [
+            "/api/customer/cart/delete/:id" => [
                 "handler" => "CartController@deleteProductFromCart",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
-            "api/customer/cart/add" => [
+            "/api/customer/cart/add" => [
                 "handler" => "CartController@addProductToCart",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
-            "api/customer/cart" => [
+            "/api/customer/cart/id/:id" => [
+                "handler" => "CartController@getProductCartByID",
+                "middleware" => false,
+                "requiredRole" => "customer"
+            ],
+            "/api/customer/cart" => [
                 "handler" => "CartController@getCostumerCartProducts",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
             /* Customers API routes */
-            "api/customer/address/add" => [
+            "/api/customer/address/id/delete/:id" => [
+                "handler" => "CustomersController@deleteUserAddress",
+                "middleware" => false,
+                "requiredRole" => "customer"
+            ],
+            "/api/customer/address/add" => [
                 "handler" => "CustomersController@addNewUserAddress",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
-            "api/customer/update" => [
+            "/api/customer/update" => [
                 "handler" => "CustomersController@updateUserData",
                 "middleware" => false,
                 "requiredRole" => "customer"
             ],
-            "api/customer/id" => [
+            "/api/customer/id" => [
                 "handler" => "CustomersController@getCustomerById",
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
-            "api/customers" => [
+            "/api/customers" => [
                 "handler" => "CustomersController@getAllCustomers",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
             /* Employees API route */
-            "api/employee/edit/:id" => [
+            "/api/employee/edit/:id" => [
                 "handler" => "EmployeesController@editEmployee",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/employee/add" => [
+            "/api/employee/add" => [
                 "handler" => "EmployeesController@addNewEmployee",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/employee/id" => [
+            "/api/employee/id" => [
                 "handler" => "EmployeesController@getEmployeeById",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/employees" => [
+            "/api/employees" => [
                 "handler" => "EmployeesController@getAllEmployees",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
             /* Sub Categories API routes */
-            "api/subcategory/delete/:id" => [
+            "/api/subcategory/delete/:id" => [
                 "handler" => "SubCategoriesController@deleteSubCategory",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/subcategory/edit/:id" => [
+            "/api/subcategory/edit/:id" => [
                 "handler" => "SubCategoriesController@editSubCategory",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/subcategory/add" => [
+            "/api/subcategory/add" => [
                 "handler" => "SubCategoriesController@addNewSubCategory",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/subcategories" => [
+            "/api/subcategories" => [
                 "handler" => "SubCategoriesController@getAllSubCategories",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
             /* Categories API routes */
-            "api/category/edit/:id" => [
+            "/api/category/edit/:id" => [
                 "handler" => "CategoriesController@editCategory",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/category/delete/:id" => [
+            "/api/category/delete/:id" => [
                 "handler" => "CategoriesController@deleteCategory",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/category/add" => [
+            "/api/category/add" => [
                 "handler" => "CategoriesController@addNewCategory",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/products/category/id/:id" => [
+            "/api/products/category/id/:id" => [
                 "handler" => "ProductsController@getAllProductsByCategory",
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
-            "api/categories" => [
+            "/api/categories" => [
                 "handler" => "CategoriesController@getAllCategories",
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
             /* Products API routes */
-            "api/product/delete/:id" => [
+            "/api/product/delete/:id" => [
                 "handler" => "ProductsController@deleteProduct",
                 "middleware" => false
             ],
-            "api/product/edit/:id" => [
+            "/api/product/edit/:id" => [
                 "handler" => "ProductsController@editProduct",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/product/add" => [
+            "/api/product/add" => [
                 "handler" => "ProductsController@addNewProduct",
                 "middleware" => false,
                 "requiredRole" => "admin"
             ],
-            "api/product/id/:id" => [
+            "/api/product/id/:id" => [
                 "handler" => "ProductsController@getProductByID",
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
-            "api/products" => [
+            "/api/products" => [
                 "handler" => "ProductsController@getAllProducts",
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
             /* Authentication API routes */
-            "api/auth/logout" => [
+            "/api/auth/logout" => [
                 "handler" => "AuthenticationController@logout",
                 "middleware" => false
             ],
-            "api/auth/check" => [
+            "/api/auth/check" => [
                 "handler" => "AuthenticationController@checkToken",
                 "middleware" => false
             ],
-            "api/auth/login" => [
+            "/api/auth/login" => [
                 "handler" => "AuthenticationController@login",
                 "middleware" => false
             ],
-            "api/auth/register" => [
+            "/api/auth/register" => [
                 "handler" => "AuthenticationController@register",
                 "middleware" => false,
             ],

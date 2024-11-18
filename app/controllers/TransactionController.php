@@ -7,18 +7,21 @@ use App\Validators\TransactionsValidator;
 use App\Helpers\JWTHelper;
 use App\Helpers\ResponseHelper;
 use App\Helpers\CookieManager;
+use App\Models\HelperModel;
 
 class TransactionController
 {
     private $jwt;
     private $transactionModel;
+    private $cookieManager;
+    private $helperModel;
 
     public function __construct($pdo)
     {
-        $this->pdo = $pdo;
         $this->jwt = new JWTHelper();
         $this->transactionModel = new TransactionModel($pdo);
         $this->cookieManager = new CookieManager();
+        $this->helperModel = new HelperModel($pdo);
     }
 
     /**
@@ -28,14 +31,12 @@ class TransactionController
      * @throws RuntimeException If an error occurs during the transaction retrieval process.
      * @return void
      */
-    public function getAllTransactions(array $parameter): void
+    public function getAllTransactions(array $params): void
     {
         try {
-            TransactionsValidator::validateGetTransactionsByParameter($parameter);
+            TransactionsValidator::validateGetTransactionsByParameter($params);
 
-            $status = explode("-", $parameter['status'] ?? '');
-            $status = count($status) === 2 ? $status : $parameter['status'];
-
+            $status = $params['status'];
             $response = $this->transactionModel->getAllTransactions($status);
 
             if (!$response) {
@@ -51,10 +52,13 @@ class TransactionController
         }
     }
 
-    public function getTransactionByCustomerID($parameter): void
+    public function getTransactionByCustomerID($params): void
     {
         try {
-            $response = $this->transactionModel->getTransactionByCustomerID($parameter['id']);
+            TransactionsValidator::validateGetTransactionsByParameter($params);
+
+            $customerID  = $params['customerID'];
+            $response = $this->transactionModel->getTransactionByCustomerID($customerID);
 
             if (!$response) {
                 ResponseHelper::sendErrorResponse('No Transactions found', 404);
@@ -83,6 +87,7 @@ class TransactionController
         try {
             TransactionsValidator::validateAddTransactionRequest($payload);
 
+            $payload['id'] = $this->helperModel->generateUuid();
             $payload['customerID'] = $this->getCustomerIDFromToken();
 
             $response = $this->transactionModel->addNewTransaction($payload);
@@ -141,11 +146,11 @@ class TransactionController
      *
      * @return int The customer ID extracted from the JWT token.
      */
-    public function getCustomerIDFromToken(): int
+    public function getCustomerIDFromToken()
     {
         $cookieHeader = $this->cookieManager->validateCookiePressence();
         $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = $this->jwt->decodeJWTData($response['token']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
 
         return $decodedToken->id;
     }

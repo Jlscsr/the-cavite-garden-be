@@ -40,7 +40,7 @@ class ResponseHelper
      * @param int $statusCode The HTTP status code for the response. Default is 200.
      * @return void
      */
-    public static function sendSuccessResponse(array $data = [], string $message, int $statusCode = 200): void
+    public static function sendSuccessResponse(array $data = [], string $message = "", int $statusCode = 200): void
     {
         $builder = new ResponseBuilder($message, 'success', $statusCode);
         $builder->setData($data);

@@ -118,6 +118,27 @@ class CustomersController
         }
     }
 
+    public function deleteUserAddress(array $params,)
+    {
+        try {
+            $customerID = $this->getCostumerIDFromToken();
+            $addressID = $params['id'];
+
+            $response = $this->customerModel->deleteCustomerAddress($customerID, $addressID);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to delete address', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'Address deleted successfully', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+        }
+    }
+
     /**
      * Retrieves the customer ID from the token.
      *

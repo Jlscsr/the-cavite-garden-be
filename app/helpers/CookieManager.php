@@ -10,7 +10,7 @@ class CookieManager
 
     public function __construct()
     {
-        $this->isSecure = true;
+        $this->isSecure = $_SERVER['REQUEST_SCHEME'] === 'https' ? true : false;
         $this->isHttpOnly = true;
         $this->cookieName = 'tcg_access_token';
     }

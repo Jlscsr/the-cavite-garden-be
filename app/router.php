@@ -29,12 +29,11 @@ class Router
      *
      * @return void
      */
-    public function run(): void
+    public function run($url): void
     {
         HeaderHelper::SendPreflightHeaders();
         HeaderHelper::SetResponseHeaders();
 
-        $url = $_GET['url'] ?? '';
         $requestMethod = strtoupper(trim($_SERVER['REQUEST_METHOD']));
         $handler = $this->route->getRoute($url);
 

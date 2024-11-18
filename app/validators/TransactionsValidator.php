@@ -10,10 +10,32 @@ class TransactionsValidator extends RequestValidator
 {
     static $requiredParameters = ['status', 'customerID'];
     static $requiredFields = [
-        'deliveryMethod' => '/^(delivery|pick-up)$/',
-        'paymentMethod' => '/^(pay-online|pay-over-the-counter)$/',
-        'shippingAddress' => '/^[a-zA-Z0-9\s]{3,}$/',
-        'purchasedProducts' => null, // JSON array of objects
+        'orderType' => [
+            'format' => '/^(delivery|pickup)$/i',
+            'errorMessage' => 'Order type must be either "delivery" or "pickup".',
+            'required' => true,
+        ],
+        'paymentType' => [
+            'format' => '/^(over-the-counter|cod|gcash)$/i',
+            'errorMessage' => 'Payment type must be either "over-the-counter" or "gcash".',
+            'required' => true
+        ],
+
+        'shippingAddress' => [
+            'format' => '/^[a-zA-Z0-9\s]{3,}$/',
+            'errorMessage' => 'Shipping address must be at least 3 characters long and contain only letters, numbers, and spaces.',
+            'required' => false
+        ],
+        'status' => [
+            'format' => null,
+            'errorMessage' => '',
+            'required' => true
+        ],
+        'purchasedProducts' => [
+            'format' => null,
+            'errorMessage' => '',
+            'required' => true
+        ]
     ];
 
     /**

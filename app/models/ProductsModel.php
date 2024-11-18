@@ -17,6 +17,11 @@ class ProductsModel
     private $categoriesModel;
     private $subCategoriesModel;
     private $helperModel;
+    private $productStatusMap = [
+        0 => 'available',
+        1 => 'not available',
+        2 => 'archived'
+    ];
 
     private const PRODUCTS_TABLE = 'products_tb';
     private const CATEGORIES_TABLE = 'product_categories_tb';
@@ -39,15 +44,15 @@ class ProductsModel
     public function getAllProducts()
     {
         $query = "
-                SELECT p.*, c.categoryName as categoryName,
-                CASE 
-                    WHEN p.subCategoryId IS NULL THEN NULL
-                    ELSE sc.subCategoryName
-                END as subCategoryName
-                FROM " . self::PRODUCTS_TABLE . " p
-                JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
-                LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
-            ";
+            SELECT p.*, c.categoryName as categoryName,
+            CASE 
+                WHEN p.subCategoryId IS NULL THEN NULL
+                ELSE sc.subCategoryName
+            END as subCategoryName
+            FROM " . self::PRODUCTS_TABLE . " p
+            JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
+            LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
+        ";
         $statement = $this->pdo->query($query);
 
         try {
@@ -58,11 +63,44 @@ class ProductsModel
                 return [];
             }
 
+            foreach ($products as $key => &$product) {
+                $product['productStatus'] = $this->productStatusMap[$product['productStatus']] ?? 'unknown';
+
+                // Fetch reviews for each product
+                $reviewQuery = "
+                SELECT pr.*, cu.firstName, cu.lastName, cu.email as userEmail
+                FROM product_reviews_tb pr
+                JOIN customers_tb cu ON pr.userID = cu.id
+                WHERE pr.productID = :productID
+            ";
+                $reviewStmt = $this->pdo->prepare($reviewQuery);
+                $reviewStmt->execute(['productID' => $product['id']]);
+                $reviews = $reviewStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($reviews as &$review) {
+                    // Fetch media for each review
+                    $mediaQuery = "
+                    SELECT * FROM product_reviews_media_tb 
+                    WHERE productReviewID = :reviewID
+                ";
+                    $mediaStmt = $this->pdo->prepare($mediaQuery);
+                    $mediaStmt->execute(['reviewID' => $review['id']]);
+                    $mediaUrls = $mediaStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $review['reviewMedia'] = $mediaUrls;
+                }
+
+                $product['reviews'] = $reviews ?: [];
+            }
+            unset($product);
+
             return $products;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
     }
+
+
 
     /**
      * Retrieves a product from the database by its ID, along with its category and subcategory names.
@@ -74,16 +112,16 @@ class ProductsModel
     public function getProductByID(string $productID)
     {
         $query = "
-                SELECT p.*, c.categoryName as categoryName,
-                CASE 
-                    WHEN p.subCategoryID IS NULL THEN NULL
-                    ELSE sc.subCategoryName
-                END as subCategoryName
-                FROM " . self::PRODUCTS_TABLE . " p
-                JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
-                LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
-                WHERE p.id = :plantID
-            ";
+            SELECT p.*, c.categoryName as categoryName,
+            CASE 
+                WHEN p.subCategoryID IS NULL THEN NULL
+                ELSE sc.subCategoryName
+            END as subCategoryName
+            FROM " . self::PRODUCTS_TABLE . " p
+            JOIN " . self::CATEGORIES_TABLE . " c ON p.categoryID = c.id
+            LEFT JOIN " . self::SUB_CATEGORIES_TABLE . " sc ON p.subCategoryID = sc.id
+            WHERE p.id = :plantID
+        ";
 
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':plantID', $productID, PDO::PARAM_STR);
@@ -96,11 +134,40 @@ class ProductsModel
                 return [];
             }
 
+            // Fetch reviews for the product
+            $reviewQuery = "
+            SELECT pr.*, cu.firstName, cu.lastName, cu.email as userEmail
+            FROM product_reviews_tb pr
+            JOIN customers_tb cu ON pr.userID = cu.id
+            WHERE pr.productID = :productID
+        ";
+            $reviewStmt = $this->pdo->prepare($reviewQuery);
+            $reviewStmt->execute(['productID' => $productID]);
+            $reviews = $reviewStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($reviews as &$review) {
+                // Fetch media for each review
+                $mediaQuery = "
+                SELECT *
+                FROM product_reviews_media_tb 
+                WHERE productReviewID = :reviewID
+            ";
+                $mediaStmt = $this->pdo->prepare($mediaQuery);
+                $mediaStmt->execute(['reviewID' => $review['id']]);
+                $mediaUrls = $mediaStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $review['reviewMedia'] = $mediaUrls;
+            }
+
+            $product['reviews'] = $reviews ?: [];
+
             return $product;
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }
     }
+
+
 
     /**
      * Retrieves all products from the database that belong to a specific category.
@@ -159,7 +226,8 @@ class ProductsModel
     public function addNewProduct(array $payload)
     {
         $id = $this->helperModel->generateUuid();
-        $productPhotoURL = $payload['productPhotoURL'];
+        $productVideoURL = $payload['productVideoURL'];
+        $imageSequenceFolderURL = $payload['imageSequenceFolderURL'];
         $productName = $payload['productName'];
         $productCategory = $payload['productCategory'];
         $productSubCategory = $payload['productSubCategory'];
@@ -175,7 +243,7 @@ class ProductsModel
         $categoryID = $categoryID['id'];
         $subCategoryID = isset($subCategoryID['id']) ? $subCategoryID['id'] : null;
 
-        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (id, categoryID, subCategoryID, productName, productDescription, productImage, productStock, productSize, productPrice) VALUES (:id, :categoryID, :subCategoryID, :productName, :productDescription, :productImage, :productStock, :productSize, :productPrice)";
+        $query = "INSERT INTO " . self::PRODUCTS_TABLE . " (id, categoryID, subCategoryID, productName, productDescription, productVideoURL, imageSequenceFolderURL, productStock, productSize, productPrice) VALUES (:id, :categoryID, :subCategoryID, :productName, :productDescription, :productVideoURL, :imageSequenceFolderURL, :productStock, :productSize, :productPrice)";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
@@ -184,7 +252,8 @@ class ProductsModel
             ':subCategoryID' => $subCategoryID,
             ':productName' => $productName,
             ':productDescription' => $productDescription,
-            ':productImage' => $productPhotoURL,
+            ':productVideoURL' => $productVideoURL,
+            ':imageSequenceFolderURL' => $imageSequenceFolderURL,
             ':productStock' => $productStock,
             ':productSize' => $productSize,
             ':productPrice' => $productPrice,

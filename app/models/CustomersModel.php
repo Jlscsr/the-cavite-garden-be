@@ -279,6 +279,23 @@ class CustomersModel
         }
     }
 
+    public function deleteCustomerAddress($customerID, $addressID)
+    {
+        $query = "DELETE FROM " . self::CUSTOMER_ADDRESS_TABLE . " WHERE customerID = :customerID AND id = :addressID";
+        $statement = $this->pdo->prepare($query);
+
+        $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+        $statement->bindValue(':addressID', $addressID, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+
+            return $statement->rowCount() > 0;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
     protected function getCustomerAddressById(string $customerID): array
     {
         $query = "SELECT * FROM " . self::CUSTOMER_ADDRESS_TABLE . " WHERE customerID = :customerID";

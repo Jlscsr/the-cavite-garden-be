@@ -55,6 +55,25 @@ class CartController
         }
     }
 
+    public function getProductCartByID(array $params)
+    {
+        try {
+            $customerID = $this->getCustomerIDFromToken();
+            $id = $params['id'];
+
+            $response = $this->cartModel->getProductCartByID($id, $customerID);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Product not found in cart', 404);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse($response, 'Product found in cart', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
+
     /**
      * A function that adds a product to the cart.
      *

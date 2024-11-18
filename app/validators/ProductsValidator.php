@@ -10,9 +10,14 @@ class ProductsValidator extends RequestValidator
 {
     static $requiredParameters = ['id', 'category'];
     static $requiredFields = [
-        'productPhotoURL' => [
+        'productVideoURL' => [
             'format' => null,
             'erroMessage' => '',
+            'required' => true,
+        ],
+        'imageSequenceFolderURL' => [
+            'format' => null,
+            'errorMessage' => '',
             'required' => true,
         ],
         'productName' => [
