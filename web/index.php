@@ -19,7 +19,7 @@ try {
     echo "Query: " . $query . "<br>";  
 
     $app = new Router();
-    $app->run($path);
+    $app->handleRequest($url);
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage();
     echo "Error: " . $e->getMessage();
