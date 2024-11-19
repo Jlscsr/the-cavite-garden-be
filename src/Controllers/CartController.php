@@ -1,5 +1,10 @@
 <?php
 
+namespace App\Controllers;
+
+use InvalidArgumentException;
+use RuntimeException;
+
 use App\Models\CartModel;
 
 use App\Validators\CartValidator;

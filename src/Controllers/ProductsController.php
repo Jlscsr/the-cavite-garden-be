@@ -1,5 +1,10 @@
 <?php
 
+namespace App\Controllers;
+
+use InvalidArgumentException;
+use RuntimeException;
+
 use App\Models\ProductsModel;
 
 use App\Validators\ProductsValidator;

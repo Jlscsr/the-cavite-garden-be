@@ -1,5 +1,10 @@
 <?php
 
+namespace App\Controllers;
+
+use InvalidArgumentException;
+use RuntimeException;
+
 use App\Models\EmployeesModel;
 
 use App\Validators\EmployeesValidator;
@@ -138,7 +143,7 @@ class EmployeesController
     {
         $cookieHeader = $this->cookieManager->validateCookiePressence();
         $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = $this->jwt->decodeJWTData($response['token']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
 
         return $decodedToken->id;
     }
