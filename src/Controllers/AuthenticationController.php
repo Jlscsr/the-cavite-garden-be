@@ -5,8 +5,6 @@ namespace App\Controllers;
 use InvalidArgumentException;
 use RuntimeException;
 
-use Config\EnvironmentLoader;
-
 use App\Models\CustomersModel;
 use App\Models\EmployeesModel;
 
@@ -30,7 +28,6 @@ class AuthenticationController
         $this->cookieManager = new CookieManager();
         $this->employeeModel = new EmployeesModel($pdo);
 
-        EnvironmentLoader::load();
     }
 
     /**
