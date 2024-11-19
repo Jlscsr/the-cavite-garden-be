@@ -11,22 +11,23 @@ class DatabaseConnection
 {
     public static function connect(): ?PDO
     {
-        require_once dirname(__DIR__) . '/vendor/autoload.php';
-        EnvironmentLoader::load();
 
         try {
-            $environment = $_ENV['ENVIRONMENT'];
+            $environment = 'production';
 
             if ($environment == "production") {
-                $host = $_ENV['PROD_DB_HOST'];
-                $username = $_ENV['PROD_DB_USERNAME'];
-                $password = $_ENV['PROD_DB_PASSWORD'];
-                $database = $_ENV['PROD_DB_NAME'];
+                // Use the Heroku JawsDB URL directly
+                $url = parse_url(getenv('JAWSDB_URL'));
+
+                $host = $url['host'];
+                $username = $url['user'];
+                $password = $url['pass'];
+                $database = ltrim($url['path'], '/'); // Removes the leading slash from the database name
             } else {
-                $host = $_ENV['DEV_DB_HOST'];
-                $username = $_ENV['DEV_DB_USERNAME'];
-                $password = $_ENV['DEV_DB_PASSWORD'];
-                $database = $_ENV['DEV_DB_NAME'];
+                $host = '127.0.0.1';
+                $username = 'root';
+                $password = '';
+                $database = 'the-cavite-garden-db';
             }
 
             $dsn = "mysql:host=$host;dbname=$database";
