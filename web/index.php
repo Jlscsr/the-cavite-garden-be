@@ -11,6 +11,8 @@ try {
     $uri = $_SERVER['REQUEST_URI'];
     $path = parse_url($uri, PHP_URL_PATH);
 
+    print_r($uri);
+    print_r($url);
     $app = new Router();
     $app->run($path);
 } catch (Exception $e) {

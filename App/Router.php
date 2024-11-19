@@ -36,7 +36,6 @@ class Router
 
         $requestMethod = strtoupper(trim($_SERVER['REQUEST_METHOD']));
         $handler = $this->route->getRoute($url);
-
         $this->handleMiddleware($handler);
 
         list($controllerName, $methodName) = $this->parseHandler($handler);
