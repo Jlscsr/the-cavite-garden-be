@@ -1,14 +1,14 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Ensure that /api/* requests go to /web/index.php with the correct query string
-    RewriteCond %{REQUEST_URI} ^/api/ [NC]
-    RewriteRule ^api/(.*)$ /web/index.php?url=/api/$1 [QSA,L]
+    # Route /api/* requests to /web/index.php
+    RewriteCond %{REQUEST_URI} ^/api [NC]
+    RewriteRule ^api/(.*)$ /web/index.php?url=$1 [QSA,L]
 
     # Fallback for all other non-file and non-directory requests
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ web/index.php [L]
+    RewriteRule ^.*$ /web/index.php [L]
 </IfModule>
 
 # Prevent directory listing
