@@ -2,13 +2,13 @@
     RewriteEngine On
 
     # Route /api/* requests to /web/index.php
-    RewriteCond %{REQUEST_URI} ^/api [NC]
-    RewriteRule ^api/(.*)$ /web/index.php?url=$1 [QSA,L]
+    RewriteCond %{REQUEST_URI} ^/api/ [NC]
+    RewriteRule ^api/(.*)$ /web/index.php?url=/api/$1 [QSA,L]
 
-    # Fallback for all other non-file and non-directory requests
+    # Fallback for all other non-file and non-directory requests (index.php will handle them)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^.*$ /web/index.php [L]
+    RewriteRule ^ /web/index.php [L]
 </IfModule>
 
 # Prevent directory listing
