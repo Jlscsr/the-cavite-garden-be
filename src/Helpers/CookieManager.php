@@ -11,6 +11,8 @@ class CookieManager
 
     public function __construct()
     {
+        print_r($_SERVER['REQUEST_SCHEME']);
+        var_dump($_SERVER);
         $this->isSecure = $_SERVER['REQUEST_SCHEME'] === 'https' ? true : false;
         $this->isHttpOnly = true;
         $this->cookieName = 'tcg_access_token';
@@ -33,7 +35,7 @@ class CookieManager
             'domain' => '',  // Specify the domain if needed
             'secure' => $this->isSecure,  // Set Secure for HTTPS requests only
             'httponly' => $this->isHttpOnly,
-            'samesite' => $this->sameSite,  
+            'samesite' => 'None',  
         ]);
     }
 
