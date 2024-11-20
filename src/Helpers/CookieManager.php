@@ -7,12 +7,14 @@ class CookieManager
     private $isSecure;
     private $isHttpOnly;
     private $cookieName;
+    private $sameSite;
 
     public function __construct()
     {
         $this->isSecure = $_SERVER['REQUEST_SCHEME'] === 'https' ? true : false;
         $this->isHttpOnly = true;
         $this->cookieName = 'tcg_access_token';
+        $this->sameSite = $_SERVER['REQUEST_SCHEME'] === 'https' ? 'None' : 'Strict';
     }
 
     /**
@@ -25,7 +27,14 @@ class CookieManager
     public function setCookiHeader(string $token, int $expiryDate): void
     {
         self::resetCookieHeader();
-        setcookie($this->cookieName, $token, $expiryDate, '/', '', $this->isSecure, $this->isHttpOnly);
+        setcookie($this->cookieName, $token, [
+            'expires' => $expiryDate,
+            'path' => '/',
+            'domain' => '',  // Specify the domain if needed
+            'secure' => $this->isSecure,  // Set Secure for HTTPS requests only
+            'httponly' => $this->isHttpOnly,
+            'samesite' => $this->sameSite,  // Use SameSite=None only for cross-site cookies over HTTPS
+        ]);
     }
 
     /**

@@ -2,12 +2,13 @@
 
 namespace App\Helpers;
 
-
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 use RuntimeException;
 use UnexpectedValueException;
+
+use Config\EnvironmentLoader;
 
 class JWTHelper
 {
@@ -16,8 +17,9 @@ class JWTHelper
 
     public function __construct()
     {
-        $this->secret_key = getenv('JWT_SECRET_KEY');
-        $this->hash_algorithm = getenv('JWT_HASH_ALGORITHM');
+        EnvironmentLoader::load();
+        $this->secret_key = getenv('JWT_SECRET_KEY') ?: $_ENV['JWT_SECRET_KEY'];
+        $this->hash_algorithm = getenv('JWT_HASH_ALGORITHM') ?: $_ENV['JWT_HASH_ALGORITHM'];
     }
 
     /**

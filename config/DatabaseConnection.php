@@ -2,8 +2,6 @@
 
 namespace Config;
 
-use Config\EnvironmentLoader;
-
 use PDO;
 use PDOException;
 
@@ -13,7 +11,7 @@ class DatabaseConnection
     {
 
         try {
-            $environment = 'production';
+            $environment = 'development';
 
             if ($environment == "production") {
                 // Use the Heroku JawsDB URL directly
