@@ -33,7 +33,7 @@ class CookieManager
             'domain' => '',  // Specify the domain if needed
             'secure' => $this->isSecure,  // Set Secure for HTTPS requests only
             'httponly' => $this->isHttpOnly,
-            // 'samesite' => $this->sameSite,  
+            'samesite' => $this->sameSite,  
         ]);
     }
 
