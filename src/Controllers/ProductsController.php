@@ -166,7 +166,8 @@ class ProductsController
         try {
             ProductsValidator::validateEditProductRequest($parameter, $payload);
 
-            $response = $this->productsModel->editProduct($parameter['id'], $payload);
+            $productID = $parameter['id'];
+            $response = $this->productsModel->editProduct($productID, $payload);
 
             if (!$response) {
                 return ResponseHelper::sendErrorResponse("Failed to edit product", 400);

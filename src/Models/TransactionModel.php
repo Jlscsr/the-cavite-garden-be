@@ -260,7 +260,11 @@ class TransactionModel
                 $response = [
                     'customerID' => $customerID,
                     'orderID' => $orderID,
-                    'status' => $status
+                    'status' => $status,
+                    'orderType' => $orderType,
+                    'paymentType' => $paymentType,
+                    'shippingAddress' => $shippingAddress,
+                    'purchasedProducts' => $purchasedProducts
                 ];
 
                 return $response;

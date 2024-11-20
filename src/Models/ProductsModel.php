@@ -167,8 +167,6 @@ class ProductsModel
         }
     }
 
-
-
     /**
      * Retrieves all products from the database that belong to a specific category.
      *
@@ -295,7 +293,8 @@ class ProductsModel
      */
     public function editProduct(string $productID, array $payload)
     {
-        $productPhotoURL = $payload['productPhotoURL'];
+        $productVideoURL = $payload['productVideoURL'];
+        $imageSequenceFolderURL     = $payload['imageSequenceFolderURL'];
         $productName = $payload['productName'];
         $productCategory = $payload['productCategory'];
         $productSubCategory = $payload['productSubCategory'];
@@ -310,7 +309,7 @@ class ProductsModel
         $categoryID = $categoryID['id'];
         $subCategoryID = isset($subCategoryID['id']) ? $subCategoryID['id'] : null;
 
-        $query = "UPDATE " . self::PRODUCTS_TABLE . " SET categoryID = :categoryID, subCategoryID = :subCategoryID, productName = :productName, productDescription = :productDescription, productImage = :productImage, productStock = :productStock, productSize = :productSize, productPrice = :productPrice WHERE id = :id";
+        $query = "UPDATE " . self::PRODUCTS_TABLE . " SET categoryID = :categoryID, subCategoryID = :subCategoryID, productName = :productName, productDescription = :productDescription, productVideoURL = :productVideoURL, imageSequenceFolderURL = :imageSequenceFolderURL, productStock = :productStock, productSize = :productSize, productPrice = :productPrice WHERE id = :id";
         $statement = $this->pdo->prepare($query);
 
         $bindParams = [
@@ -319,10 +318,11 @@ class ProductsModel
             ':subCategoryID' => $subCategoryID,
             ':productName' => $productName,
             ':productDescription' => $productDescription,
-            ':productImage' => $productPhotoURL,
             ':productStock' => $productStock,
             ':productSize' => $productSize,
             ':productPrice' => $productPrice,
+            ':productVideoURL' => $productVideoURL,
+            ':imageSequenceFolderURL' => $imageSequenceFolderURL,
         ];
 
         foreach ($bindParams as $key => $value) {

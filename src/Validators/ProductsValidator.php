@@ -134,9 +134,5 @@ class ProductsValidator extends RequestValidator
                 throw new InvalidArgumentException($key . ' is not a valid parameter.');
             }
         }
-
-        if (isset($parameter['id']) && !is_numeric($parameter['id'])) {
-            throw new InvalidArgumentException('ID field must be a number type');
-        }
     }
 }

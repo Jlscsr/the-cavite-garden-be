@@ -9,17 +9,61 @@ use App\Validators\RequestValidator;
 class EmployeesValidator extends RequestValidator
 {
     static $requiredFields = [
-        'firstName' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-        'middleName' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-        'lastName' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-        'nickname' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
-        'birthdate' => '/^\d{4}-\d{2}-\d{2}$/',
-        'sex' => '/^(male|female|other)$/i',
-        'maritalStatus' => '/^(single|married|divorced)$/i',
-        'employeeEmail' => '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
-        'password' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%_*?&]{8,}$/',
-        'role' => '/^(admin|employee)$/i',
-        'dateStarted' => '/^\d{4}-\d{2}-\d{2}$/',
+        'firstName' => [
+            'format' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
+            'errorMessage' => 'First name must contain only letters and hyphens.',
+            'required' => true
+        ],
+        'middleName' => [
+            'format' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
+            'errorMessage' => 'Middle name must contain only letters and hyphens.',
+            'required' => true
+        ],
+        'lastName' => [
+            'format' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
+            'errorMessage' => 'Last name must contain only letters and hyphens.',
+            'required' => true
+        ],
+        'nickname' => [
+            'format' => '/^[a-zA-Z]+(?:[\-][a-zA-Z]+)*$/',
+            'errorMessage' => 'Nickname must contain only letters and hyphens.',
+            'required' => true
+        ],
+        'birthdate' => [
+            'format' => '/^\d{4}-\d{2}-\d{2}$/',
+            'errorMessage' => 'Birthdate must be in the format YYYY-MM-DD.',
+            'required' => true
+        ],
+        'sex' => [
+            'format' => '/^(male|female)$/i',
+            'errorMessage' => 'Sex must be either "male" or "female".',
+            'required' => true
+        ],
+        'maritalStatus' => [
+            'format' => '/^(single|married|divorced|widowed)$/i',
+            'errorMessage' => 'Marital status must be one of "single", "married", "divorced", or "widowed".',
+            'required' => true
+        ],
+        'employeeEmail' => [
+            'format' => '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
+            'errorMessage' => 'Invalid email format.',
+            'required' => true
+        ],
+        'password' => [
+            'format' => '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/',
+            'errorMessage' => 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.',
+            'required' => true
+        ],
+        'role' => [
+            'format' => '/^(admin|employee)$/i',
+            'errorMessage' => 'Role must be either "admin" or "employee".',
+            'required' => true
+        ],
+        'dateStarted' => [
+            'format' => '/^\d{4}-\d{2}-\d{2}$/',
+            'errorMessage' => 'Date started must be in the format YYYY-MM-DD.',
+            'required' => true
+        ],
     ];
 
     /**
