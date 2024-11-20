@@ -26,10 +26,10 @@ class HeaderHelper
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-            if (in_array($origin, self::$allowedOrigins)) {
+            /* if (in_array($origin, self::$allowedOrigins)) {
                 header("Access-Control-Allow-Origin: $origin");
-            }
-
+            } */
+            header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
             header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
             header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
             header("Access-Control-Allow-Credentials: true");
@@ -52,10 +52,11 @@ class HeaderHelper
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-        if (in_array($origin, self::$allowedOrigins)) {
+        /* if (in_array($origin, self::$allowedOrigins)) {
             header("Access-Control-Allow-Origin: $origin");
-        }
+        } */
 
+        header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
         header("Access-Control-Allow-Credentials: true");
         header("Cache-Control: no-cache, must-revalidate");
         header("Pragma: no-cache");
