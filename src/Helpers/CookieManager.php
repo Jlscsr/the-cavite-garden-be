@@ -34,7 +34,7 @@ class CookieManager
             'path' => '/',
             'domain' => '',  // Specify the domain if needed
             'secure' => $this->isSecure,  // Set Secure for HTTPS requests only
-            'httponly' => $this->isHttpOnly,
+            'httponly' => true,
             'samesite' => 'None',  
         ]);
     }
