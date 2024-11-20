@@ -30,7 +30,7 @@ class CookieManager
         setcookie($this->cookieName, $token, [
             'expires' => $expiryDate,
             'path' => '/',
-            'domain' => 'https://agile-forest-86410-744466084125.herokuapp.com',  // Specify the domain if needed
+            'domain' => 'agile-forest-86410-744466084125.herokuapp.com',  // Specify the domain if needed
             'secure' => $this->isSecure,  // Set Secure for HTTPS requests only
             'httponly' => $this->isHttpOnly,
             'samesite' => $this->sameSite,  
