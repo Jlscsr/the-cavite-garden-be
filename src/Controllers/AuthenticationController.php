@@ -13,6 +13,7 @@ use App\Validators\AuthenticationValidator;
 use App\Helpers\JWTHelper;
 use App\Helpers\ResponseHelper;
 use App\Helpers\CookieManager;
+use App\Helpers\HeaderHelper;
 
 class AuthenticationController
 {
@@ -27,6 +28,8 @@ class AuthenticationController
         $this->customerModel = new CustomersModel($pdo);
         $this->cookieManager = new CookieManager();
         $this->employeeModel = new EmployeesModel($pdo);
+
+        HeaderHelper::SetResponseHeaders();
 
     }
 
