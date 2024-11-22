@@ -1,18 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Redirect HTTP to HTTPS
-    RewriteCond %{HTTPS} !=on
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
     # Route /api/* requests to /web/index.php
     RewriteCond %{REQUEST_URI} ^/api/ [NC]
     RewriteRule ^api/(.*)$ /web/index.php?url=/api/$1 [QSA,L]
 
-    # Prevent loop for /web/index.php
-    RewriteCond %{REQUEST_URI} !^/web/index.php$ [NC]
-
-    # Fallback for all other non-file and non-directory requests
+    # Fallback for all other non-file and non-directory requests (index.php will handle them)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ /web/index.php [L]

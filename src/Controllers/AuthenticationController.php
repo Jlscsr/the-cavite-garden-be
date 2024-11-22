@@ -30,7 +30,6 @@ class AuthenticationController
         $this->employeeModel = new EmployeesModel($pdo);
 
         HeaderHelper::SetResponseHeaders();
-
     }
 
     /**
@@ -107,7 +106,7 @@ class AuthenticationController
 
             $token = $this->jwt->encodeDataToJWT($tokenData);
 
-            $this->cookieManager->setCookiHeader($token, $expiryDate);
+            $this->cookieManager->setCookieHeader($token, $expiryDate);
 
             return ResponseHelper::sendSuccessResponse($userAccount, 'Logged In success', 201);
         } catch (RuntimeException $e) {
@@ -154,7 +153,7 @@ class AuthenticationController
     public function checkToken()
     {
         try {
-            $cookieHeader = $this->cookieManager->validateCookiePressence();
+            $cookieHeader = $this->cookieManager->validateCookiePresence();
 
             if (is_array($cookieHeader) && isset($cookieHeader['status']) && ($cookieHeader['status'] === 'failed')) {
                 return ResponseHelper::sendUnauthorizedResponse($cookieHeader['message']);
@@ -175,7 +174,7 @@ class AuthenticationController
 
     private function getCostumerIDFromToken(): string
     {
-        $cookieHeader = $this->cookieManager->validateCookiePressence();
+        $cookieHeader = $this->cookieManager->validateCookiePresence();
         $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
         $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
 

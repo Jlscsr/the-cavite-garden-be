@@ -11,10 +11,17 @@ class CookieManager
 
     public function __construct()
     {
-        $this->isSecure = $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? true : false;
         $this->isHttpOnly = true;
         $this->cookieName = 'tcg_access_token';
-        $this->sameSite = $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? 'None' : 'Strict';
+
+        // Dynamically set `isSecure` and `sameSite` based on environment
+        if ($this->isRunningOnLocalhost()) {
+            $this->isSecure = false;
+            $this->sameSite = 'Lax'; // Use 'Lax' for local development to avoid issues
+        } else {
+            $this->isSecure = true;
+            $this->sameSite = 'None'; // Required for cross-site cookies
+        }
     }
 
     /**
@@ -24,26 +31,42 @@ class CookieManager
      * @param int $expiryDate The expiry date of the cookie in Unix timestamp format.
      * @return void
      */
-    public function setCookiHeader(string $token, int $expiryDate): void
+    public function setCookieHeader(string $token, int $expiryDate): void
     {
-        self::resetCookieHeader();
+        $this->resetCookieHeader();
+
+        $isLocalhost = $this->isRunningOnLocalhost();
+
         setcookie($this->cookieName, $token, [
             'expires' => $expiryDate,
             'path' => '/',
-            'domain' => 'agile-forest-86410-744466084125.herokuapp.com',  // Specify the domain if needed
-            'secure' => $this->isSecure,  // Set Secure for HTTPS requests only
+            'domain' => $isLocalhost ? '' : $_SERVER['HTTP_HOST'], // Leave domain empty for localhost
+            'secure' => !$isLocalhost, // Secure only for non-localhost
             'httponly' => $this->isHttpOnly,
-            'samesite' => $this->sameSite,  
+            'samesite' => $this->sameSite, // Lax for localhost, None for production
         ]);
     }
 
     /**
-     * Resets the cookie header by deleting the cookie with the specified name.
+     * Determines if the current environment is localhost.
      *
-     * This function sets the cookie with the name specified in the `$cookieName` property to an empty value,
-     * with an expiry date set to one hour ago. The cookie is set to be accessible only on the current domain,
-     * and it is flagged as secure if the `$isSecure` property is set to true. The cookie is also flagged as HTTP-only
-     * if the `$isHttpOnly` property is set to true.
+     * @return bool
+     */
+    private function isRunningOnLocalhost(): bool
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        // Match common localhost scenarios and *.local domains
+        $localHosts = ['localhost', '127.0.0.1'];
+        if (preg_match('/\.local$/', $host)) {
+            return true;
+        }
+
+        return in_array($host, $localHosts);
+    }
+
+    /**
+     * Resets the cookie header by deleting the cookie with the specified name.
      *
      * @return void
      */
@@ -52,14 +75,13 @@ class CookieManager
         setcookie($this->cookieName, '', time() - 3600, '/', '', $this->isSecure, $this->isHttpOnly);
     }
 
-
     /**
      * Extracts the access token from the provided cookie header.
      *
-     * @param string $cookieHeader The cookie header containing the access token.
+     * @param string|array $cookieHeader The cookie header containing the access token.
      * @return array The extracted access token or an error message if the token is missing.
      */
-    public function extractAccessTokenFromCookieHeader(string | array $cookieHeader): array
+    public function extractAccessTokenFromCookieHeader(string|array $cookieHeader): array
     {
         $token = $cookieHeader;
 
@@ -68,22 +90,17 @@ class CookieManager
             return ['status' => 'failed', 'message' => 'Access Token is Missing. Please Login Again'];
         }
 
-        $token = str_replace("tcg_access_token=", "", $token) ?? '';
+        $token = str_replace($this->cookieName . "=", "", $token) ?? '';
 
         return ['token' => $token];
     }
 
-
     /**
      * Validates the presence of a cookie in the request headers.
      *
-     * This function checks if the 'Cookie' header is present in the request headers.
-     * If the header is missing, it returns an array with 'status' set to 'failed' and 'message' set to 'Cookie header is missing'.
-     * If the header is present, it returns the value of the 'Cookie' header.
-     *
      * @return array|string Returns an array with 'status' and 'message' if the header is missing, otherwise returns the value of the 'Cookie' header.
      */
-    public function validateCookiePressence(): array | string
+    public function validateCookiePresence(): array|string
     {
         $headers = getallheaders();
 

@@ -38,7 +38,17 @@ class AuthenticationValidator extends RequestValidator
             'format' => '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%_*?&]{8,}$/',
             'errorMessage' => 'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.',
             'required' => true,
-        ]
+        ],
+        'currentAddress' => [
+            'format' => '',
+            'errorMessage' => '',
+            'required' => false,
+        ],
+        'permanentAddress' => [
+            'format' => '',
+            'errorMessage' => '',
+            'required' => false,
+        ],
     ];
 
 

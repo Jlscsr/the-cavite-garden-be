@@ -187,8 +187,23 @@ class CustomersModel
 
         try {
             $statement->execute();
+            $isSuccess = $statement->rowCount() > 0;
 
-            return $statement->rowCount() > 0;
+            if ($isSuccess) {
+                $currentAddress = $payload['currentAddress'];
+                $permanentAddress = $payload['permanentAddress'];
+
+                if ($currentAddress === $permanentAddress) {
+                    $isAddressAddingSuccess = $this->addNewUserAddress($id, $currentAddress);
+                } else {
+                    $currentSuccess = $this->addNewUserAddress($id, $currentAddress);
+                    $permanentSuccess = $this->addNewUserAddress($id, $permanentAddress);
+
+                    $isAddressAddingSuccess = $currentSuccess && $permanentSuccess;
+                }
+
+                return $isAddressAddingSuccess;
+            }
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }
