@@ -48,7 +48,7 @@ class BaseMiddleware implements MiddlewareInterface
      * Checks the presence of a cookie in the request and validates the token.
      *
      * This function validates the presence of a cookie in the request by calling the
-     * `validateCookiePressence()` method of the `cookieManager` object. If the cookie
+     * `validateCookiePresence()` method of the `cookieManager` object. If the cookie
      * is not found, a `RuntimeException` is thrown. If the cookie is found, the
      * `validateToken()` method is called to validate the token.
      *
@@ -58,7 +58,7 @@ class BaseMiddleware implements MiddlewareInterface
     public function checkCookiePresence(): void
     {
         try {
-            $response = $this->cookieManager->validateCookiePressence();
+            $response = $this->cookieManager->validateCookiePresence();
 
             if (is_array($response) && isset($response['status']) && ($response['status'] === 'failed')) {
                 throw new RuntimeException($response['message']);

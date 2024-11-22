@@ -109,7 +109,6 @@ class TransactionController
             ResponseHelper::sendErrorResponse($e->getMessage(), 400);
         }
     }
-    /* update */
 
     /**
      * Updates the status of a transaction.
