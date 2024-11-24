@@ -81,7 +81,7 @@ class CookieManager
      * @param string|array $cookieHeader The cookie header containing the access token.
      * @return array The extracted access token or an error message if the token is missing.
      */
-    public function extractAccessTokenFromCookieHeader(string|array $cookieHeader): array
+    public function extractAccessTokenFromCookieHeader(string | array $cookieHeader): array
     {
         $token = $cookieHeader;
 

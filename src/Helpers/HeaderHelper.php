@@ -58,7 +58,7 @@ class HeaderHelper
         } */
 
         header("Access-Control-Allow-Credentials: true");
-        header("Cache-Control: no-cache, must-revalidate");
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
         header("Pragma: no-cache");
         header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
         header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
