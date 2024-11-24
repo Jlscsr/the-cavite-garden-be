@@ -263,10 +263,11 @@ class CustomersModel
         $province = $payload['province'];
         $city = $payload['city'];
         $barangay = $payload['barangay'];
+        $postalCode = $payload['postalCode'];
         $streetAddress = $payload['streetAddress'];
         $landmark = $payload['landmark'];
 
-        $query = "INSERT INTO " . self::CUSTOMER_ADDRESS_TABLE . " (id, customerID, addressLabel , region, province, municipality, barangay, streetAddress, landmark) VALUES (:id, :customerID, :addressLabel, :region, :province, :city, :barangay, :streetAddress, :landmark)";
+        $query = "INSERT INTO " . self::CUSTOMER_ADDRESS_TABLE . " (id, customerID, addressLabel , region, province, municipality, barangay, postalCode, streetAddress, landmark) VALUES (:id, :customerID, :addressLabel, :region, :province, :city, :barangay, :postalCode, :streetAddress, :landmark)";
         $statement = $this->pdo->prepare($query);
 
         $bind_params = [
@@ -277,6 +278,7 @@ class CustomersModel
             ':province' => $province,
             ':city' => $city,
             ':barangay' => $barangay,
+            ':postalCode' => $postalCode,
             ':streetAddress' => $streetAddress,
             ':landmark' => $landmark,
         ];
