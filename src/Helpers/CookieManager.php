@@ -11,13 +11,16 @@ class CookieManager
 
     public function __construct()
     {
+        // Comment if running in localhost, uncomment if not
+        // $this->isSecure = $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? true : false;
+        // $this->sameSite = $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? 'None' : 'Strict';
+
         $this->isHttpOnly = true;
         $this->cookieName = 'tcg_access_token';
 
         // Dynamically set `isSecure` and `sameSite` based on environment
         if ($this->isRunningOnLocalhost()) {
             $this->isSecure = false;
-            $this->sameSite = 'Lax'; // Use 'Lax' for local development to avoid issues
         } else {
             $this->isSecure = true;
             $this->sameSite = 'None'; // Required for cross-site cookies
@@ -35,16 +38,20 @@ class CookieManager
     {
         $this->resetCookieHeader();
 
-        $isLocalhost = $this->isRunningOnLocalhost();
+        // For Production
+        /*  $isLocalhost = $this->isRunningOnLocalhost();
 
         setcookie($this->cookieName, $token, [
             'expires' => $expiryDate,
             'path' => '/',
-            'domain' => $isLocalhost ? '' : $_SERVER['HTTP_HOST'], // Leave domain empty for localhost
-            'secure' => !$isLocalhost, // Secure only for non-localhost
+            'domain' => 'agile-forest-86410-744466084125.herokuapp.com',
+            'secure' => !$isLocalhost,
             'httponly' => $this->isHttpOnly,
-            'samesite' => $this->sameSite, // Lax for localhost, None for production
-        ]);
+            'samesite' => $this->sameSite,
+        ]); */
+
+        /* For Localhosting */
+        setcookie($this->cookieName, $token, $expiryDate, '/', '', false, $this->isHttpOnly);
     }
 
     /**
@@ -72,7 +79,10 @@ class CookieManager
      */
     public function resetCookieHeader(): void
     {
-        setcookie($this->cookieName, '', time() - 3600, '/', $_SERVER['HTTP_HOST'], $this->isSecure, $this->isHttpOnly);
+        setcookie('tcg_access_token', '', time() - 3600, '/', '', $this->isSecure, $this->isHttpOnly);
+
+        // For deployment
+        // setcookie($this->cookie_name, '', time() - 3600, '/', 'agile-forest-86410-744466084125.herokuapp.com', $this->is_secure, $this->is_http_only);
     }
 
     /**
