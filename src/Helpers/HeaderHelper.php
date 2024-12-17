@@ -24,17 +24,15 @@ class HeaderHelper
     public static function SendPreflightHeaders(): void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-            /* if (in_array($origin, self::$allowedOrigins)) {
-                header("Access-Control-Allow-Origin: $origin");
-            } */
+            header("Access-Control-Allow-Origin: https://localhost:5173");
+            // header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
+
             header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
             header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
             header("Access-Control-Allow-Credentials: true");
             header("Access-Control-Expose-Headers: Content-Length");
-            // header("Access-Control-Allow-Origin: http://localhost:5173");
-            header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
+            header('Content-Type: application/json');
 
             http_response_code(200);
             exit;
@@ -51,19 +49,14 @@ class HeaderHelper
      */
     public static function SetResponseHeaders(): void
     {
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        header("Access-Control-Allow-Origin: https://localhost:5173");
+        // header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
 
-        /* if (in_array($origin, self::$allowedOrigins)) {
-            header("Access-Control-Allow-Origin: $origin");
-        } */
-
-        header("Access-Control-Allow-Credentials: true");
-        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-        header("Pragma: no-cache");
         header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-        header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
-        header("Content-Type: application/json");
-        // header("Access-Control-Allow-Origin: http://localhost:5173");
-        header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
+        header("Access-Control-Allow-Headers: Referrer, Content-Type, Authorization");
+        header('Access-Control-Allow-Credentials: true');
+        header("Access-Control-Expose-Headers: Content-Length");
+        header("Referrer-Policy: no-referrer");
+        header('Content-Type: application/json');
     }
 }

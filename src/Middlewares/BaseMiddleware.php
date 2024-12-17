@@ -93,7 +93,7 @@ class BaseMiddleware implements MiddlewareInterface
             throw new RuntimeException($response['message']);
         }
 
-        $isTokenValid = $this->jwt->validateToken($response['token']);
+        $isTokenValid =  $this->jwt->validateToken($response['token']);
 
         if (!$isTokenValid) {
             $this->cookieManager->resetCookieHeader();

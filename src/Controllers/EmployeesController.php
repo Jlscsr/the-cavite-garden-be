@@ -142,8 +142,8 @@ class EmployeesController
     private function getCostumerIDFromToken(): int
     {
         $cookieHeader = $this->cookieManager->validateCookiePresence();
-        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
+        $token = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader['cookie']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($token);
 
         return $decodedToken->id;
     }

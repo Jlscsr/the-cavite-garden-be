@@ -7,8 +7,6 @@ use RuntimeException;
 
 use App\Models\CustomersModel;
 
-use App\Validators\CustomersValidator;
-
 use App\Helpers\JWTHelper;
 use App\Helpers\ResponseHelper;
 use App\Helpers\CookieManager;
@@ -123,6 +121,27 @@ class CustomersController
         }
     }
 
+    public function updateCustomerAddress(array $params, array $payload)
+    {
+        try {
+            $customerID = $this->getCostumerIDFromToken();
+            $addressID = $params['id'];
+
+            $response = $this->customerModel->updateCustomerAddress($customerID, $addressID, $payload);
+
+            if ($response['status'] == 'failed') {
+                ResponseHelper::sendErrorResponse($response['message'], 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], $response['message'], 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+        }
+    }
+
     public function deleteUserAddress(array $params,)
     {
         try {
@@ -155,8 +174,8 @@ class CustomersController
     private function getCostumerIDFromToken(): string
     {
         $cookieHeader = $this->cookieManager->validateCookiePresence();
-        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
+        $token = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader['cookie']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($token);
 
         return $decodedToken->id;
     }

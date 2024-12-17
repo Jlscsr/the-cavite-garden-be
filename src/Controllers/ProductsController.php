@@ -41,6 +41,7 @@ class ProductsController
         try {
             $products = $this->productsModel->getAllProducts();
 
+
             if (empty($products)) {
                 return ResponseHelper::sendSuccessResponse([], "No products found", 404);
             }

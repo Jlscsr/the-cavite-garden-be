@@ -87,7 +87,21 @@ class ProductsModel
                     $mediaStmt->execute(['reviewID' => $review['id']]);
                     $mediaUrls = $mediaStmt->fetchAll(PDO::FETCH_ASSOC);
 
-                    $review['reviewMedia'] = $mediaUrls;
+                    $review['reviewMedia'] = $mediaUrls ?: [];
+                }
+
+                // fetch all reply for each review
+                foreach ($reviews as &$review) {
+                    $replyQuery = "
+                    SELECT * FROM product_reviews_reply_tb 
+                    WHERE productReviewID = :reviewID
+                ";
+
+                    $replyStmt = $this->pdo->prepare($replyQuery);
+                    $replyStmt->execute(['reviewID' => $review['id']]);
+                    $replies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $review['replies'] = $replies ?: [];
                 }
 
                 $product['reviews'] = $reviews ?: [];
@@ -159,7 +173,23 @@ class ProductsModel
                 $review['reviewMedia'] = $mediaUrls;
             }
 
+            // fetch all reply for each review
+            foreach ($reviews as &$review) {
+                $replyQuery = "
+                SELECT *
+                FROM product_reviews_reply_tb 
+                WHERE productReviewID = :reviewID
+            ";
+
+                $replyStmt = $this->pdo->prepare($replyQuery);
+                $replyStmt->execute(['reviewID' => $review['id']]);
+                $replies = $replyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $review['replies'] = $replies ?: [];
+            }
+
             $product['reviews'] = $reviews ?: [];
+
 
             return $product;
         } catch (PDOException $e) {

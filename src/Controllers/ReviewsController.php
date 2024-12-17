@@ -2,7 +2,6 @@
 
 namespace App\Controllers;
 
-use InvalidArgumentException;
 use RuntimeException;
 
 use App\Models\ReviewsModel;
@@ -27,6 +26,22 @@ class ReviewsController
         $this->helperModel = new HelperModel($pdo);
     }
 
+    public function getAllReviews()
+    {
+        try {
+            $response = $this->reviewsModel->getAllReviews();
+
+            if ($response['status'] === 'success' && !isset($response['data'])) {
+                ResponseHelper::sendSuccessResponse([], 'No reviews found');
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse($response['data'], $response['message'], 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
+
     public function addNewProductReview(array $payload)
     {
         try {
@@ -46,12 +61,44 @@ class ReviewsController
         }
     }
 
+    public function addReviewReply(array $payload)
+    {
+        try {
+            $payload['id'] = $this->helperModel->generateUuid();
+            $response = $this->reviewsModel->addReviewReply($payload);
+
+            if ($response['status'] === 'failed') {
+                ResponseHelper::sendErrorResponse('Failed to add review reply', 500);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], $response['message'], 201);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
+
+    public function deleteReview(array $params)
+    {
+        try {
+            $response = $this->reviewsModel->deleteReview($params['id']);
+
+            if ($response['status'] === 'failed') {
+                ResponseHelper::sendErrorResponse('Failed to delete review', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'Review deleted successfully', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
 
     public function getCustomerIDFromToken()
     {
         $cookieHeader = $this->cookieManager->validateCookiePresence();
-        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
+        $token = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader['cookie']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($token);
 
         return $decodedToken->id;
     }

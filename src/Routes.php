@@ -10,10 +10,25 @@ class Routes
     {
         $this->routes = [
             /* Reivews API  routes */
+            "/api/product/review/reply/add" => [
+                "handler" => "ReviewsController@addReviewReply",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
+            "/api/product/review/delete/:id" => [
+                "handler" => "ReviewsController@deleteReview",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
             "/api/product/review/add" => [
                 "handler" => "ReviewsController@addNewProductReview",
                 "middleware" => false,
                 "requiredRole" => "both"
+            ],
+            '/api/reviews' => [
+                'handler' => 'ReviewsController@getAllReviews',
+                'middleware' => false,
+                'requiredRole' => 'both'
             ],
             /* User API routes */
             "/api/user/info" => [
@@ -67,6 +82,11 @@ class Routes
                 "handler" => "CustomersController@deleteUserAddress",
                 "middleware" => false,
                 "requiredRole" => "customer"
+            ],
+            '/api/customer/address/id/update/:id' => [
+                'handler' => 'CustomersController@updateCustomerAddress',
+                'middleware' => false,
+                'requiredRole' => 'customer'
             ],
             "/api/customer/address/add" => [
                 "handler" => "CustomersController@addNewUserAddress",

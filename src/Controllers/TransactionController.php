@@ -45,7 +45,7 @@ class TransactionController
             $response = $this->transactionModel->getAllTransactions($status);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse('No Transactions found', 404);
+                ResponseHelper::sendSuccessResponse([], 'No Transactions found');
                 exit;
             }
 
@@ -66,7 +66,7 @@ class TransactionController
             $response = $this->transactionModel->getTransactionByCustomerID($customerID);
 
             if (!$response) {
-                ResponseHelper::sendErrorResponse('No Transactions found', 404);
+                ResponseHelper::sendSuccessResponse([], 'No Transactions found');
                 exit;
             }
 
@@ -154,8 +154,8 @@ class TransactionController
     public function getCustomerIDFromToken()
     {
         $cookieHeader = $this->cookieManager->validateCookiePresence();
-        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
+        $token = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader['cookie']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($token);
 
         return $decodedToken->id;
     }

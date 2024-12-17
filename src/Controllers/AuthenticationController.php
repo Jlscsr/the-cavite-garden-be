@@ -32,21 +32,6 @@ class AuthenticationController
         HeaderHelper::SetResponseHeaders();
     }
 
-    /**
-     * Registers a new user.
-     *
-     * @param array $payload The payload containing user registration data.
-     *                      It should have the following keys:
-     *                      - firstName: string
-     *                      - lastName: string
-     *                      - birthdate: string
-     *                      - phoneNumber: string
-     *                      - password: string
-     *                      - email: string
-     * @throws RuntimeException If an error occurs during registration.
-     * @throws InvalidArgumentException If the payload is missing required fields.
-     * @return void
-     */
     public function register($payload)
     {
         try {
@@ -73,13 +58,6 @@ class AuthenticationController
         }
     }
 
-    /**
-     * Performs user login authentication.
-     *
-     * @param array $payload The payload containing user login data.
-     * @throws RuntimeException If an error occurs during login.
-     * @return void
-     */
     public function login(array $payload)
     {
         try {
@@ -132,11 +110,7 @@ class AuthenticationController
         }
     }
 
-    /**
-     * Logs out the user by resetting the cookie header and sending a success response.
-     *
-     * @return void
-     */
+
     public function logout()
     {
         $this->cookieManager->resetCookieHeader();
@@ -144,12 +118,6 @@ class AuthenticationController
         exit;
     }
 
-    /**
-     * Checks if the token in the cookie header is valid.
-     *
-     * @throws RuntimeException if an error occurs while validating the token
-     * @return void
-     */
     public function checkToken()
     {
         try {
@@ -159,9 +127,10 @@ class AuthenticationController
                 return ResponseHelper::sendUnauthorizedResponse($cookieHeader['message']);
             }
 
-            $response = $this->cookieManager->extractAccessTokenFromCookieHeader(trim($cookieHeader));
 
-            if (!$this->jwt->validateToken($response['token'])) {
+            $token = $this->cookieManager->extractAccessTokenFromCookieHeader(trim($cookieHeader['cookie']));
+
+            if (!$this->jwt->validateToken(token: $token)) {
                 $this->cookieManager->resetCookieHeader();
                 return ResponseHelper::sendUnauthorizedResponse('Invalid token');
             }
@@ -175,8 +144,8 @@ class AuthenticationController
     private function getCostumerIDFromToken(): string
     {
         $cookieHeader = $this->cookieManager->validateCookiePresence();
-        $response = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader);
-        $decodedToken = (object) $this->jwt->decodeJWTData($response['token']);
+        $token = $this->cookieManager->extractAccessTokenFromCookieHeader($cookieHeader['cookie']);
+        $decodedToken = (object) $this->jwt->decodeJWTData($token);
 
         return $decodedToken->id;
     }

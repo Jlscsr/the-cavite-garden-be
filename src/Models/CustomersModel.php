@@ -49,6 +49,8 @@ class CustomersModel
                 $customers[$key]['shipping_address'] = $response;
             }
 
+            print_r($customers);
+
             return $customers;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
@@ -291,6 +293,73 @@ class CustomersModel
             $statement->execute();
 
             return $statement->rowCount() > 0;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
+    public function updateCustomerAddress($customerID, $addressID, $payload)
+    {
+        // Check first there is a change in the address from the payload and the current address data in the database
+        // If there is no change, return [success => true, message => 'No changes made']
+        // If there is a change, update the address data in the database
+
+        $currentAddress = $this->getCustomerAddressById($customerID);
+
+        if ($currentAddress) {
+            $currentAddress = $currentAddress[0];
+        }
+
+        $addressLabel = $payload['addressLabel'];
+        $region = $payload['region'];
+        $province = $payload['province'];
+        $city = $payload['city'];
+        $barangay = $payload['barangay'];
+        $postalCode = $payload['postalCode'];
+        $streetAddress = $payload['streetAddress'];
+        $landmark = $payload['landmark'];
+
+        if (
+            $currentAddress['addressLabel'] === $addressLabel &&
+            $currentAddress['region'] === $region &&
+            $currentAddress['province'] === $province &&
+            $currentAddress['municipality'] === $city &&
+            $currentAddress['barangay'] === $barangay &&
+            $currentAddress['postalCode'] === $postalCode &&
+            $currentAddress['streetAddress'] === $streetAddress &&
+            $currentAddress['landmark'] === $landmark
+        ) {
+            return ['status' => 'success', 'message' => 'No changes made'];
+        }
+
+        $query = "UPDATE " . self::CUSTOMER_ADDRESS_TABLE . " SET addressLabel = :addressLabel, region = :region, province = :province, municipality = :city, barangay = :barangay, postalCode = :postalCode, streetAddress = :streetAddress, landmark = :landmark WHERE customerID = :customerID AND id = :addressID";
+        $statement = $this->pdo->prepare($query);
+
+        $bind_params = [
+            ':addressLabel' => $addressLabel,
+            ':region' => $region,
+            ':province' => $province,
+            ':city' => $city,
+            ':barangay' => $barangay,
+            ':postalCode' => $postalCode,
+            ':streetAddress' => $streetAddress,
+            ':landmark' => $landmark,
+            ':customerID' => $customerID,
+            ':addressID' => $addressID,
+        ];
+
+        foreach ($bind_params as $param => $value) {
+            $statement->bindValue($param, $value, PDO::PARAM_STR);
+        }
+
+        try {
+            $statement->execute();
+
+            if ($statement->rowCount() === 0) {
+                return ['status' => 'failed', 'message' => 'Failed to update address'];
+            }
+
+            return ['status' => 'success', 'message' => 'Address updated successfully'];
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
         }

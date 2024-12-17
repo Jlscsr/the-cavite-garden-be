@@ -8,23 +8,35 @@ class CookieManager
     private $isHttpOnly;
     private $cookieName;
     private $sameSite;
+    private $domain;
 
     public function __construct()
     {
-        // Comment if running in localhost, uncomment if not
-        $this->isSecure = $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? true : false;
-        $this->sameSite = $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? 'None' : 'Strict';
+        // Determine if the request is secure
+        $this->isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ||
+            (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
+        // Set SameSite based on scheme
+        $this->sameSite = $this->isSecure ? 'None' : 'Strict';
+
+        // Cookie settings
         $this->isHttpOnly = true;
         $this->cookieName = 'tcg_access_token';
+        $this->domain = $this->isRunningOnLocalhost() ? 'the-cavite-garden-be.local' : 'agile-forest-86410-744466084125.herokuapp.com';
+    }
 
-        // Dynamically set `isSecure` and `sameSite` based on environment
-        /* if ($this->isRunningOnLocalhost()) {
-            $this->isSecure = false;
-        } else {
-            $this->isSecure = true;
-            $this->sameSite = 'None'; // Required for cross-site cookies
-        } */
+    /**
+     * Determines if the current environment is localhost.
+     *
+     * @return bool
+     */
+    private function isRunningOnLocalhost(): bool
+    {
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        // Match common localhost scenarios and *.local domains
+        $localHosts = ['localhost', '127.0.0.1', 'the-cavite-garden-be.local'];
+        return in_array($host, $localHosts) || preg_match('/\.local$/', $host);
     }
 
     /**
@@ -38,38 +50,14 @@ class CookieManager
     {
         $this->resetCookieHeader();
 
-        // For Production
-         $isLocalhost = $this->isRunningOnLocalhost();
-
         setcookie($this->cookieName, $token, [
             'expires' => $expiryDate,
             'path' => '/',
-            'domain' => 'agile-forest-86410-744466084125.herokuapp.com',
-            'secure' => !$isLocalhost,
+            'domain' => $this->domain,
+            'secure' => $this->isSecure,
             'httponly' => $this->isHttpOnly,
             'samesite' => $this->sameSite,
         ]);
-
-        /* For Localhosting */
-        // setcookie($this->cookieName, $token, $expiryDate, '/', '', false, $this->isHttpOnly);
-    }
-
-    /**
-     * Determines if the current environment is localhost.
-     *
-     * @return bool
-     */
-    private function isRunningOnLocalhost(): bool
-    {
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-
-        // Match common localhost scenarios and *.local domains
-        $localHosts = ['localhost', '127.0.0.1'];
-        if (preg_match('/\.local$/', $host)) {
-            return true;
-        }
-
-        return in_array($host, $localHosts);
     }
 
     /**
@@ -79,45 +67,47 @@ class CookieManager
      */
     public function resetCookieHeader(): void
     {
-        // setcookie('tcg_access_token', '', time() - 3600, '/', '', $this->isSecure, $this->isHttpOnly);
-
-        // For deployment
-        setcookie('tcg_access_token', '', time() - 3600, '/', 'agile-forest-86410-744466084125.herokuapp.com', $this->isSecure, $this->isHttpOnly);
+        setcookie($this->cookieName, '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'domain' => $this->domain,
+            'secure' => $this->isSecure,
+            'httponly' => $this->isHttpOnly,
+            'samesite' => $this->sameSite,
+        ]);
     }
 
     /**
-     * Extracts the access token from the provided cookie header.
+     * Extracts the access token from the cookie header.
      *
-     * @param string|array $cookieHeader The cookie header containing the access token.
-     * @return array The extracted access token or an error message if the token is missing.
+     * @return string|null The access token extracted from the cookie header, or null if not found.
      */
-    public function extractAccessTokenFromCookieHeader(string | array $cookieHeader): array
-    {
-        $token = $cookieHeader;
-
-        if (strpos($token, $this->cookieName) === false) {
-            $this->resetCookieHeader();
-            return ['status' => 'failed', 'message' => 'Access Token is Missing. Please Login Again'];
-        }
-
-        $token = str_replace($this->cookieName . "=", "", $token) ?? '';
-
-        return ['token' => $token];
-    }
-
-    /**
-     * Validates the presence of a cookie in the request headers.
-     *
-     * @return array|string Returns an array with 'status' and 'message' if the header is missing, otherwise returns the value of the 'Cookie' header.
-     */
-    public function validateCookiePresence(): array|string
+    public function extractAccessTokenFromCookieHeader(): ?string
     {
         $headers = getallheaders();
 
-        if (!isset($headers['Cookie'])) {
-            return ['status' => 'failed', 'message' => 'Cookie header is missing'];
+        if (isset($headers['Cookie'])) {
+            $cookie = $headers['Cookie'];
+            parse_str(str_replace('; ', '&', $cookie), $cookies);
+            return $cookies[$this->cookieName] ?? null;
         }
 
-        return $headers['Cookie'];
+        return null;
+    }
+
+    /**
+     * Validates the presence of the cookie in the headers.
+     *
+     * @return array|bool Returns true if the cookie is found, or an error array otherwise.
+     */
+    public function validateCookiePresence(): array|bool
+    {
+        $headers = getallheaders();
+
+        if (!isset($headers['Cookie']) || strpos($headers['Cookie'], $this->cookieName . '=') === false) {
+            return ['status' => 'failed', 'message' => 'Cookie not found'];
+        }
+
+        return ['status' => 'success', 'cookie' => $headers['Cookie']];
     }
 }
