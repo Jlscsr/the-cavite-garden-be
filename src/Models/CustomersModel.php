@@ -49,8 +49,6 @@ class CustomersModel
                 $customers[$key]['shipping_address'] = $response;
             }
 
-            print_r($customers);
-
             return $customers;
         } catch (PDOException $e) {
             throw new RuntimeException($e->getMessage());
