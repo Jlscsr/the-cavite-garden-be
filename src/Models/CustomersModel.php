@@ -209,6 +209,76 @@ class CustomersModel
         }
     }
 
+    public function deleteUserAccount($customerID)
+    {
+        // Begin a transaction to ensure all deletions are successful before committing
+        $this->pdo->beginTransaction();
+
+        try {
+            // Delete product reviews reply (based on productReviewID, which is linked to userID)
+            $query = "DELETE FROM product_reviews_reply_tb WHERE productReviewID IN (SELECT id FROM product_reviews_tb WHERE userID = :customerID)";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Delete product reviews media (based on productReviewID, which is linked to userID)
+            $query = "DELETE FROM product_reviews_media_tb WHERE productReviewID IN (SELECT id FROM product_reviews_tb WHERE userID = :customerID)";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Delete product reviews (based on userID)
+            $query = "DELETE FROM product_reviews_tb WHERE userID = :customerID";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Delete cart items (based on userID)
+            $query = "DELETE FROM customer_cart_tb WHERE customerID = :customerID";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Delete shipping address (based on userID)
+            $query = "DELETE FROM customers_ship_address_tb WHERE customerID = :customerID";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Delete orders (based on userID)
+            $query = "DELETE FROM orders_tb WHERE customerID = :customerID";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Delete order products (based on orderID, linked to userID in orders_tb)
+            $query = "DELETE FROM order_products_tb WHERE orderID IN (SELECT id FROM orders_tb WHERE customerID = :customerID)";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Finally, delete the customer (based on customerID)
+            $query = "DELETE FROM customers_tb WHERE id = :customerID";
+            $statement = $this->pdo->prepare($query);
+            $statement->bindValue(':customerID', $customerID, PDO::PARAM_STR);
+            $statement->execute();
+
+            // Commit the transaction if all deletions are successful
+            $this->pdo->commit();
+
+            if ($statement->rowCount() === 0) {
+                return ['status' => 'failed', 'message' => 'Failed to delete user account'];
+            }
+
+            return ['status' => 'success', 'message' => 'User account deleted successfully'];
+        } catch (PDOException $e) {
+            // Rollback the transaction in case of an error
+            $this->pdo->rollBack();
+            throw new RuntimeException($e->getMessage());
+        }
+    }
+
+
     public function updateUserData($customerID, $payload)
     {
         $firstName = $payload['firstName'];

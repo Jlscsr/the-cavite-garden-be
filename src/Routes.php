@@ -31,6 +31,11 @@ class Routes
                 'requiredRole' => 'both'
             ],
             /* User API routes */
+            "/api/user/delete/:id" => [
+                "handler" => "CustomersController@deleteUserAccount",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
             "/api/user/info" => [
                 "handler" => "AuthenticationController@getUserInfo",
                 "middleware" => false,

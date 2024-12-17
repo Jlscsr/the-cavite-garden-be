@@ -92,6 +92,24 @@ class CustomersController
         }
     }
 
+    public function deleteUserAccount(): void
+    {
+        try {
+            $customerID = $this->getCostumerIDFromToken();
+
+            $response = $this->customerModel->deleteUserAccount($customerID);
+
+            if ($response['status'] === 'failed') {
+                ResponseHelper::sendErrorResponse('Failed to delete user account', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'User account deleted successfully', 200);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
+
     /**
      * Adds a new user address.
      *
