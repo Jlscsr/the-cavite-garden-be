@@ -9,6 +9,14 @@ class Routes
     public function __construct()
     {
         $this->routes = [
+
+            /* Reports API routes */
+            "/api/reports" => [
+                "handler" => "ReportsController@getAllReports",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
+
             /* Reivews API  routes */
             "/api/product/review/reply/add" => [
                 "handler" => "ReviewsController@addReviewReply",
@@ -41,10 +49,15 @@ class Routes
                 "middleware" => false,
                 "requiredRole" => "both"
             ],
-            "/api/transactions/status/:status" => [
+            "/api/transactions/orderPurpose/status/:orderPurpose/:status" => [
                 "handler" => "TransactionController@getAllTransactions",
                 "middleware" => false,
                 "requiredRole" => "admin"
+            ],
+            '/api/transaction/orderPurpose/update/:id' => [
+                'handler' => 'TransactionController@updateTransactionOrderPurpose',
+                'middleware' => false,
+                'requiredRole' => 'admin'
             ],
             "/api/transaction/status/update/:id" => [
                 "handler" => "TransactionController@updateTransactionStatus",

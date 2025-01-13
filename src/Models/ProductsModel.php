@@ -60,7 +60,7 @@ class ProductsModel
             $products = $statement->fetchAll(PDO::FETCH_ASSOC);
 
             if (empty($products)) {
-                return [];
+                return ['status' => 'failed', 'message' => 'No products found'];
             }
 
             foreach ($products as $key => &$product) {
@@ -108,7 +108,7 @@ class ProductsModel
             }
             unset($product);
 
-            return $products;
+            return ['status' => 'success', 'data' => $products];
         } catch (PDOException $e) {
             throw new RuntimeException("Database Error: " . $e->getMessage());
         }

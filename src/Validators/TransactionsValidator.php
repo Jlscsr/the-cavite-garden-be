@@ -8,7 +8,7 @@ use App\Validators\RequestValidator;
 
 class TransactionsValidator extends RequestValidator
 {
-    static $requiredParameters = ['status', 'customerID'];
+    static $requiredParameters = ['status', 'customerID', 'orderPurpose'];
     static $requiredFields = [
         'orderType' => [
             'format' => '/^(delivery|pickup)$/i',

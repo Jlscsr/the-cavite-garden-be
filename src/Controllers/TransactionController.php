@@ -42,7 +42,9 @@ class TransactionController
             TransactionsValidator::validateGetTransactionsByParameter($params);
 
             $status = $params['status'];
-            $response = $this->transactionModel->getAllTransactions($status);
+            $orderPurpose = $params['orderPurpose'];
+
+            $response = $this->transactionModel->getAllTransactions($status, $orderPurpose);
 
             if (!$response) {
                 ResponseHelper::sendSuccessResponse([], 'No Transactions found');
@@ -136,6 +138,28 @@ class TransactionController
             }
 
             ResponseHelper::sendSuccessResponse([], 'Transaction status updated successfully', 201);
+        } catch (RuntimeException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 500);
+        } catch (InvalidArgumentException $e) {
+            ResponseHelper::sendErrorResponse($e->getMessage(), 400);
+        }
+    }
+
+    public function updateTransactionOrderPurpose($params, $payload)
+    {
+        try {
+
+            $transactionID = $params['id'];
+            $status = $payload['status'];
+
+            $response = $this->transactionModel->updateTransactionOrderPurpose($transactionID, $status);
+
+            if (!$response) {
+                ResponseHelper::sendErrorResponse('Failed to update transaction order purpose', 400);
+                exit;
+            }
+
+            ResponseHelper::sendSuccessResponse([], 'Transaction order purpose updated successfully', 201);
         } catch (RuntimeException $e) {
             ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         } catch (InvalidArgumentException $e) {

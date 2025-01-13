@@ -33,19 +33,24 @@ class TransactionModel
      * @return array An array containing the retrieved transaction data.
      * @throws RuntimeException If a product is not found during processing.
      */
-    public function getAllTransactions(string $status)
+    public function getAllTransactions(string $status, string $orderPurpose): array
     {
         try {
             $query = "";
 
-            if ($status == "all") {
-                $query = "SELECT * FROM " . self::ORDERS_TB . " ORDER BY createdAt DESC";
-            } else {
+            if ($status == "all" && $orderPurpose == "all") {
+                $query = "SELECT * FROM " . self::ORDERS_TB . "  ORDER BY createdAt DESC";
+            } else if ($status !== "all" && $orderPurpose == "all") {
                 $query = "SELECT * FROM " . self::ORDERS_TB . " WHERE status = :status ORDER BY createdAt DESC";
+            } else if ($status == "all" && $orderPurpose !== "all") {
+                $query = "SELECT * FROM " . self::ORDERS_TB . " WHERE orderPurpose = :orderPurpose ORDER BY createdAt DESC";
+            } else {
+                $query = "SELECT * FROM " . self::ORDERS_TB . " WHERE status = :status AND orderPurpose = :orderPurpose ORDER BY createdAt DESC";
             }
 
             // Fetch orders based on status
             $stmt = $this->pdo->prepare($query);
+            $stmt->bindParam(':orderPurpose', $orderPurpose, PDO::PARAM_STR);
 
             if ($status != "all") {
                 $stmt->bindParam(':status', $status, PDO::PARAM_STR);
@@ -286,6 +291,21 @@ class TransactionModel
     {
 
         $query = "UPDATE " . self::ORDERS_TB . " SET status = :status WHERE id = :id";
+        $statement = $this->pdo->prepare($query);
+        $statement->bindValue(':id', $transactionID, PDO::PARAM_STR);
+        $statement->bindValue(':status', $status, PDO::PARAM_STR);
+
+        try {
+            $statement->execute();
+            return $statement->rowCount() > 0;
+        } catch (PDOException $e) {
+            throw new RuntimeException($e->getMessage(), 500);
+        }
+    }
+
+    public function updateTransactionOrderPurpose(string $transactionID, string $status): bool
+    {
+        $query = "UPDATE " . self::ORDERS_TB . " SET orderPurpose = 'refund', status = :status  WHERE id = :id";
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':id', $transactionID, PDO::PARAM_STR);
         $statement->bindValue(':status', $status, PDO::PARAM_STR);

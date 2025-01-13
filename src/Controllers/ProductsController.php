@@ -39,14 +39,13 @@ class ProductsController
     public function getAllProducts()
     {
         try {
-            $products = $this->productsModel->getAllProducts();
+            $response = $this->productsModel->getAllProducts();
 
-
-            if (empty($products)) {
+            if ($response['status'] === 'failed') {
                 return ResponseHelper::sendSuccessResponse([], "No products found", 404);
             }
 
-            return ResponseHelper::sendSuccessResponse($products, 'Products retrieved successfully');
+            return ResponseHelper::sendSuccessResponse($response['data'], 'Products retrieved successfully');
         } catch (RuntimeException $e) {
             return ResponseHelper::sendErrorResponse($e->getMessage(), 500);
         }
