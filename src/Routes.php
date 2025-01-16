@@ -17,6 +17,26 @@ class Routes
                 "requiredRole" => "admin"
             ],
 
+            /* Refund API routes */
+
+            "/api/refund/transaction/status/update/:id" => [
+                "handler" => "RefundController@updateRefundTransactionStatus",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
+
+            "/api/refund/transaction/add" => [
+                "handler" => "RefundController@addNewRefundTransaction",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
+
+            "/api/refund/transactions/status/:status" => [
+                "handler" => "RefundController@getAllRefundTransactions",
+                "middleware" => false,
+                "requiredRole" => "admin"
+            ],
+
             /* Reivews API  routes */
             "/api/product/review/reply/add" => [
                 "handler" => "ReviewsController@addReviewReply",

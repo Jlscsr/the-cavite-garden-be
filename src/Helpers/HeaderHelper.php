@@ -5,14 +5,6 @@ namespace App\Helpers;
 class HeaderHelper
 {
     /**
-     * List of allowed origins for CORS.
-     */
-    private static $allowedOrigins = [
-        "https://the-cavite-garden.web.app",
-        "http://localhost:5173"
-    ];
-
-    /**
      * Sends preflight headers for CORS if the request method is OPTIONS.
      *
      * This function checks if the request method is OPTIONS and sends the necessary headers
