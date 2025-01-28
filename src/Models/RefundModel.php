@@ -100,10 +100,12 @@ class RefundModel
             $productPrice = $payload['productPrice'];
             $totalPrice = $payload['totalPrice'];
             $refundReason = $payload['refundReason'];
+            $paymentMethod = $payload['paymentMethod'];
+            $gcashRefNumber = $payload['gcashRefNumber'];
             $status = $payload['status'];
 
 
-            $query = "INSERT INTO " . self::REFUND_TRANSACTIONS_TABLE . " (id, userID, productID, contactDetails, productQuantity, productPrice, totalPrice, refundReason, status) VALUES (:id, :userID, :productID, :contactDetails, :productQuantity, :productPrice, :totalPrice, :refundReason, :status)";
+            $query = "INSERT INTO " . self::REFUND_TRANSACTIONS_TABLE . " (id, userID, productID, contactDetails, productQuantity, productPrice, totalPrice, paymentMethod, gcashRefNumber, refundReason, status) VALUES (:id, :userID, :productID, :contactDetails, :productQuantity, :productPrice, :totalPrice, :paymentMethod, :gcashRefNumber, :refundReason, :status)";
 
             $stmt = $this->pdo->prepare($query);
 
@@ -115,6 +117,8 @@ class RefundModel
                 ':productQuantity' => $productQuantity,
                 ':productPrice' => $productPrice,
                 ':totalPrice' => $totalPrice,
+                ':paymentMethod' => $paymentMethod,
+                ':gcashRefNumber' => $gcashRefNumber,
                 ':refundReason' => $refundReason,
                 ':status' => $status
             ];
