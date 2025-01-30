@@ -61,8 +61,9 @@ class RefundController
         try {
             $id = $params['id'];
             $status = $payload['status'];
+            $mediaURL = $payload['mediaURL'];
 
-            $response = $this->refundModel->updateRefundTransactionStatus($id, $status);
+            $response = $this->refundModel->updateRefundTransactionStatus($id, $status, $mediaURL);
 
             if ($response['status'] === 'failed') {
                 return ResponseHelper::sendSuccessResponse([], "Failed to update refund transaction status", 400);

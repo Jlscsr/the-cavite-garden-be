@@ -101,11 +101,11 @@ class RefundModel
             $totalPrice = $payload['totalPrice'];
             $refundReason = $payload['refundReason'];
             $paymentMethod = $payload['paymentMethod'];
-            $gcashRefNumber = $payload['gcashRefNumber'];
+            $gcashNumber = $payload['gcashNumber'];
             $status = $payload['status'];
 
 
-            $query = "INSERT INTO " . self::REFUND_TRANSACTIONS_TABLE . " (id, userID, productID, contactDetails, productQuantity, productPrice, totalPrice, paymentMethod, gcashRefNumber, refundReason, status) VALUES (:id, :userID, :productID, :contactDetails, :productQuantity, :productPrice, :totalPrice, :paymentMethod, :gcashRefNumber, :refundReason, :status)";
+            $query = "INSERT INTO " . self::REFUND_TRANSACTIONS_TABLE . " (id, userID, productID, contactDetails, productQuantity, productPrice, totalPrice, paymentMethod, gcashNumber, refundReason, status) VALUES (:id, :userID, :productID, :contactDetails, :productQuantity, :productPrice, :totalPrice, :paymentMethod, :gcashNumber, :refundReason, :status)";
 
             $stmt = $this->pdo->prepare($query);
 
@@ -118,7 +118,7 @@ class RefundModel
                 ':productPrice' => $productPrice,
                 ':totalPrice' => $totalPrice,
                 ':paymentMethod' => $paymentMethod,
-                ':gcashRefNumber' => $gcashRefNumber,
+                ':gcashNumber' => $gcashNumber,
                 ':refundReason' => $refundReason,
                 ':status' => $status
             ];
@@ -163,7 +163,7 @@ class RefundModel
         }
     }
 
-    public function updateRefundTransactionStatus(string $id, string $status)
+    public function updateRefundTransactionStatus(string $id, string $status, string $mediaURL)
     {
         try {
             $query = "UPDATE " . self::REFUND_TRANSACTIONS_TABLE . " SET status = :status WHERE id = :id";
@@ -177,6 +177,21 @@ class RefundModel
                     'status' => 'failed',
                     'message' => 'Failed to update refund transaction status'
                 ];
+            }
+
+            if ($mediaURL !== 'n/a') {
+                $mediaQuery = "UPDATE " . self::REFUND_TRANSACTIONS_MEDIA_TABLE . " SET refundProofMediaURL = :mediaURL WHERE refundID = :refundID";
+                $mediaStmt = $this->pdo->prepare($mediaQuery);
+                $mediaStmt->bindValue(':mediaURL', $mediaURL);
+                $mediaStmt->bindValue(':refundID', $id);
+                $mediaStmt->execute();
+
+                if ($mediaStmt->rowCount() === 0) {
+                    return [
+                        'status' => 'failed',
+                        'message' => 'Failed to update refund transaction status'
+                    ];
+                }
             }
 
             return [

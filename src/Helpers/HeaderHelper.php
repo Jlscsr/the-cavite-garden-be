@@ -4,6 +4,11 @@ namespace App\Helpers;
 
 class HeaderHelper
 {
+
+    private const ALLOWED_ORIGINS = [
+        'https://localhost:5173',
+        'https://the-cavite-garden.web.app'
+    ];
     /**
      * Sends preflight headers for CORS if the request method is OPTIONS.
      *
@@ -17,8 +22,9 @@ class HeaderHelper
     {
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
-            // header("Access-Control-Allow-Origin: https://localhost:5173");
-            header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
+            if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], self::ALLOWED_ORIGINS)) {
+                header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+            }
 
             header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
             header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
@@ -41,8 +47,10 @@ class HeaderHelper
      */
     public static function SetResponseHeaders(): void
     {
-        // header("Access-Control-Allow-Origin: https://localhost:5173");
-        header("Access-Control-Allow-Origin: https://the-cavite-garden.web.app");
+
+        if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], self::ALLOWED_ORIGINS)) {
+            header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+        }
 
         header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
         header("Access-Control-Allow-Headers: Referrer, Content-Type, Authorization");
