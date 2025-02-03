@@ -50,7 +50,10 @@ class TransactionModel
 
             // Fetch orders based on status
             $stmt = $this->pdo->prepare($query);
-            $stmt->bindParam(':orderPurpose', $orderPurpose, PDO::PARAM_STR);
+
+            if($orderPurpose != "all"){
+                $stmt->bindParam(':orderPurpose', $orderPurpose, PDO::PARAM_STR);
+            }
 
             if ($status != "all") {
                 $stmt->bindParam(':status', $status, PDO::PARAM_STR);
